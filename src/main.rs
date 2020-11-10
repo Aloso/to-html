@@ -1,55 +1,99 @@
-use std::io::Read;
+use clap::{App, AppSettings, Arg};
+use std::{
+    error::Error,
+    io::{Read, Write},
+    iter,
+    process::{Command, Stdio},
+};
 
-use clap::{App, Arg, SubCommand};
-
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = App::new("colo-utils")
-        .about("Utilities for generating HTML documentation for colo")
+        .about(
+            "Utility for generating HTML documentation for colo\n\
+            This requires the `ansi-to-html` NPM package",
+        )
         .version("0.1")
         .author("Ludwig Stecher <ludwig.stecher@gmx.de>")
-        .subcommand(
-            SubCommand::with_name("dim")
-                .about("Replace ANSI sequences for dimming colors with HTML")
-                .arg(Arg::with_name("text").index(1).help("Input text")),
+        .global_setting(AppSettings::ColoredHelp)
+        .arg(
+            Arg::with_name("command")
+                .index(1)
+                .multiple(true)
+                .help("The colo command")
+                .required(true),
+        )
+        .arg(
+            Arg::with_name("cargo")
+                .long("cargo")
+                .short("c")
+                .help("Use `cargo run` instead of `colo`"),
         )
         .get_matches();
 
-    match matches.subcommand() {
-        ("dim", Some(matches)) => {
-            let text = matches
-                .value_of("text")
-                .map(ToString::to_string)
-                .unwrap_or_else(|| {
-                    let mut text = Vec::new();
-                    std::io::stdin().read_to_end(&mut text).unwrap();
-                    let mut text = String::from_utf8(text).unwrap();
-                    if text.ends_with('\n') {
-                        text.truncate(text.len() - 1);
-                    }
-                    text
-                });
+    let cargo_flag = matches.is_present("cargo");
 
-            println!("{}", dimmed_to_html(&text));
-        }
-        _ => {
-            unreachable!("No subcommand entered");
-        }
+    let commands: Vec<&str> = matches
+        .values_of("command")
+        .ok_or("command missing")?
+        .collect();
+    let commands: Vec<&[&str]> = commands.split(|&s| s == "--").collect();
+
+    let mut result = String::from(
+        "<pre class=\"terminal-text\">\n\
+        <span class=\"terminal-arrow\">&gt;</span> <span class=\"terminal-command\">colo</span> ",
+    );
+
+    for command_args in commands {
+        let colo_out = run_colo(command_args, cargo_flag)?;
+        let ansi_html_out = run_ansi_to_html(&dimmed_to_html(&colo_out))?;
+
+        result.push_str(&command_to_html(&concat_commands(command_args)));
+        result.push('\n');
+        result.push_str(&ansi_html_out);
     }
+
+    result.push_str(
+        "<span class=\"terminal-arrow\">&gt;</span> <span style=\"background-color: white\"> </span>",
+    );
+    result.push_str("\n</pre>");
+
+    println!("{}", result);
+
+    Ok(())
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-enum CharPos {
-    None,
-    Esc,
-    Bracket,
-    Two,
-    Zero,
+fn concat_commands(input: &[&str]) -> String {
+    let mut result: String = input
+        .iter()
+        .map(|&s| -> String {
+            if s.contains(|c: char| c.is_ascii_whitespace()) {
+                iter::once('"')
+                    .chain(s.chars())
+                    .chain("\" ".chars())
+                    .collect()
+            } else {
+                s.chars().chain(iter::once(' ')).collect()
+            }
+        })
+        .collect();
+
+    result.truncate(result.len() - 1);
+    result
 }
 
 fn dimmed_to_html(input: &str) -> String {
     let mut pos = CharPos::None;
     let mut open_tags = 0;
     let mut result = String::new();
+
+    #[derive(Debug, Copy, Clone, Eq, PartialEq)]
+    enum CharPos {
+        None,
+        Esc,
+        Bracket,
+        Two,
+        Zero,
+    }
 
     for c in input.chars() {
         match pos {
@@ -105,4 +149,56 @@ fn dimmed_to_html(input: &str) -> String {
     }
 
     result
+}
+
+use syntect::easy::HighlightLines;
+use syntect::highlighting::{Style, ThemeSet};
+use syntect::html::styled_line_to_highlighted_html;
+use syntect::parsing::SyntaxSet;
+use syntect::util::LinesWithEndings;
+
+fn command_to_html(input: &str) -> String {
+    let ps = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+
+    let syntax = ps.find_syntax_by_extension("sh").unwrap();
+    let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
+    // let s = "~ $ colo show orange 'hsl(30, 100%, 50%)' --out hex";
+    let mut result = String::new();
+
+    for line in LinesWithEndings::from(&input) {
+        let ranges: Vec<(Style, &str)> = h.highlight(line, &ps);
+        let escaped =
+            styled_line_to_highlighted_html(&ranges, syntect::html::IncludeBackground::No);
+        result.push_str(&escaped);
+    }
+    result
+}
+
+fn run_colo(command_args: &[&str], cargo_flag: bool) -> Result<String, Box<dyn Error>> {
+    let output = if cargo_flag {
+        Command::new("cargo")
+            .args(["run", "-q", "--"].iter().chain(command_args))
+            .env("FORCE_ANSI_OUTPUT", "1")
+            .output()
+    } else {
+        Command::new("colo")
+            .args(command_args)
+            .env("FORCE_ANSI_OUTPUT", "1")
+            .output()
+    }?;
+    Ok(String::from_utf8(output.stdout)?)
+}
+
+fn run_ansi_to_html(input: &str) -> Result<String, Box<dyn Error>> {
+    let mut output = String::new();
+
+    let process = Command::new("ansi-to-html")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+    process.stdin.unwrap().write_all(input.as_bytes())?;
+    process.stdout.unwrap().read_to_string(&mut output)?;
+
+    Ok(output)
 }

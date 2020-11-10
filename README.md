@@ -1,12 +1,22 @@
 # colo-utils
 
-To generate the images on https://aloso.github.io/colo/, I previously used screenshots from alacritty. With this tool, I can now run
+Wrapper around `colo` that emits HTML which can be displayed on a website.
+
+## Example
+
+Execute `colo s orange` and emit HTML:
 
 ```fish
-FORCE_ANSI_OUTPUT=1 colo s orange | colo-utils dim | ansi-to-html
+colo-utils s orange
 ```
 
-to convert the ANSI escape sequences to HTML. `ansi-to-html` is a NPM package that unfortunately ignores the dimmed style, hence I developed `colo-utils`. Install it with
+Execute three commands and emit HTML:
+
+```fish
+colo-utils -- s ff3377 -- s orange -- s 'hsv(300, 100%, 100%)'
+```
+
+## Installation
 
 ```fish
 cargo install --git https://github.com/Aloso/colo-utils
