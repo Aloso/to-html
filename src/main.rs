@@ -60,10 +60,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .collect();
     let commands: Vec<&[&str]> = commands.split(|&s| s == "--").collect();
 
-    let mut result = String::from("<pre class=\"terminal-text\">\n");
+    let mut result = format!("<pre class=\"{}text\">\n", prefix);
 
     for command_parts in commands {
-        result.push_str("<span class=\"terminal-arrow\">&gt;</span> ");
+        result.push_str(&format!("<span class=\"{}arrow\">&gt;</span> ", prefix));
 
         let command = concat_command(command_parts);
 
@@ -78,7 +78,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    result.push_str("<span class=\"terminal-arrow\">&gt;</span> <span class=\"caret\"> </span>");
+    result.push_str(&format!(
+        "<span class=\"{p}arrow\">&gt;</span> <span class=\"{p}caret\"> </span>",
+        p = prefix
+    ));
     result.push_str("\n</pre>");
 
     println!("{}", result);
