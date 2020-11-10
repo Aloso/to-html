@@ -7,30 +7,28 @@ use std::{
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let matches = App::new("colo-utils")
+    let matches = App::new("to-html")
         .about(
-            "Utility for generating HTML documentation for colo\n\
-            This requires the `ansi-to-html` NPM package",
+            "Terminal wrapper that generates HTML from ANSI escape sequences\n\
+            This requires that `bash` and `ansi-to-html` are installed.",
         )
         .version("0.1")
         .author("Ludwig Stecher <ludwig.stecher@gmx.de>")
         .global_setting(AppSettings::ColoredHelp)
-        .arg(
+        .args(&[
             Arg::with_name("command")
                 .index(1)
                 .multiple(true)
-                .help("The colo command")
+                .help("The command(s) to execute. Multiple commands are separated with '--'")
                 .required(true),
-        )
-        .arg(
-            Arg::with_name("cargo")
-                .long("cargo")
-                .short("c")
-                .help("Use `cargo run` instead of `colo`"),
-        )
+            Arg::with_name("no-env")
+                .long("no-env")
+                .short("e")
+                .help("Don't print environment variables passed as arguments"),
+        ])
         .get_matches();
 
-    let cargo_flag = matches.is_present("cargo");
+    let no_env = matches.is_present("no-env");
 
     let commands: Vec<&str> = matches
         .values_of("command")
@@ -38,23 +36,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         .collect();
     let commands: Vec<&[&str]> = commands.split(|&s| s == "--").collect();
 
-    let mut result = String::from(
-        "<pre class=\"terminal-text\">\n\
-        <span class=\"terminal-arrow\">&gt;</span> <span class=\"terminal-command\">colo</span> ",
-    );
+    let mut result = String::from("<pre class=\"terminal-text\">\n");
 
-    for command_args in commands {
-        let colo_out = run_colo(command_args, cargo_flag)?;
-        let ansi_html_out = run_ansi_to_html(&dimmed_to_html(&colo_out))?;
+    for command in commands {
+        result.push_str("<span class=\"terminal-arrow\">&gt;</span> ");
 
-        result.push_str(&command_to_html(&concat_commands(command_args)));
+        let printed_command = concat_command(command, no_env);
+        let command = concat_command(command, false);
+
+        let cmd_out = run_command(&command)?;
+        let ansi_html_out = run_ansi_to_html(&dimmed_to_html(&cmd_out))?;
+
+        result.push_str(&command_to_html(&printed_command));
         result.push('\n');
         result.push_str(&ansi_html_out);
     }
 
-    result.push_str(
-        "<span class=\"terminal-arrow\">&gt;</span> <span style=\"background-color: white\"> </span>",
-    );
+    result.push_str("<span class=\"terminal-arrow\">&gt;</span> <span class=\"caret\"> </span>");
     result.push_str("\n</pre>");
 
     println!("{}", result);
@@ -62,13 +60,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn concat_commands(input: &[&str]) -> String {
-    let mut result: String = input
+fn concat_command(command: &[&str], no_env: bool) -> String {
+    let mut result: String = command
         .iter()
-        .map(|&s| -> String {
-            if s.contains(|c: char| c.is_ascii_whitespace()) {
+        .copied()
+        .filter(|&s| !no_env || !is_environment_variable(s))
+        .map(|s| -> String {
+            if s.contains(|c: char| c.is_ascii_whitespace() || matches!(c, '"' | '\'')) {
                 iter::once('"')
-                    .chain(s.chars())
+                    .chain(s.chars().flat_map(|c| {
+                        Some('\\')
+                            .filter(|_| matches!(c, '"' | '\''))
+                            .into_iter()
+                            .chain(iter::once(c))
+                    }))
                     .chain("\" ".chars())
                     .collect()
             } else {
@@ -163,7 +168,6 @@ fn command_to_html(input: &str) -> String {
 
     let syntax = ps.find_syntax_by_extension("sh").unwrap();
     let mut h = HighlightLines::new(syntax, &ts.themes["base16-ocean.dark"]);
-    // let s = "~ $ colo show orange 'hsl(30, 100%, 50%)' --out hex";
     let mut result = String::new();
 
     for line in LinesWithEndings::from(&input) {
@@ -173,21 +177,31 @@ fn command_to_html(input: &str) -> String {
         result.push_str(&escaped);
     }
     result
+        .replace("<span style=\"color:#c0c5ce;\">", "<span class=\"quote\">")
+        .replace("<span style=\"color:#a3be8c;\">", "<span class=\"string\">")
+        .replacen(
+            "<span style=\"color:#8fa1b3;\">",
+            "<span class=\"terminal-command\">",
+            1,
+        )
 }
 
-fn run_colo(command_args: &[&str], cargo_flag: bool) -> Result<String, Box<dyn Error>> {
-    let output = if cargo_flag {
-        Command::new("cargo")
-            .args(["run", "-q", "--"].iter().chain(command_args))
-            .env("FORCE_ANSI_OUTPUT", "1")
-            .output()
-    } else {
-        Command::new("colo")
-            .args(command_args)
-            .env("FORCE_ANSI_OUTPUT", "1")
-            .output()
-    }?;
-    Ok(String::from_utf8(output.stdout)?)
+fn run_command(args: &str) -> Result<String, Box<dyn Error>> {
+    let mut output = String::new();
+
+    let process = Command::new("bash")
+        // .args(&["-c", args])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    let mut args = args.to_string();
+    args.push_str("\nexit");
+
+    process.stdin.unwrap().write_all(args.as_bytes())?;
+    process.stdout.unwrap().read_to_string(&mut output)?;
+
+    Ok(output)
 }
 
 fn run_ansi_to_html(input: &str) -> Result<String, Box<dyn Error>> {
@@ -201,4 +215,15 @@ fn run_ansi_to_html(input: &str) -> Result<String, Box<dyn Error>> {
     process.stdout.unwrap().read_to_string(&mut output)?;
 
     Ok(output)
+}
+
+fn is_environment_variable(s: &str) -> bool {
+    if let Some((i, _)) = s.char_indices().find(|&(_, c)| c == '=') {
+        let var_name = &s[..i];
+        var_name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+    } else {
+        false
+    }
 }

@@ -1,5 +1,5 @@
 [package]
-name = "colo-utils"
+name = "to-html"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 edition = "2018"
