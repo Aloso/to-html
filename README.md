@@ -4,7 +4,7 @@ Terminal wrapper for rendering a terminal on a website by converting ANSI escape
 
 ## Examples
 
-Execute a command and emit HTML:
+Execute a command:
 
 ```fish
 to-html echo "Hello world"
@@ -12,7 +12,7 @@ to-html echo "Hello world"
 # echo "Hello world"
 ```
 
-Execute three commands and emit HTML:
+Execute three commands:
 
 ```fish
 to-html -- echo "Hello" -- echo "world" -- ls

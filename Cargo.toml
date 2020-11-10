@@ -8,4 +8,3 @@ edition = "2018"
 
 [dependencies]
 clap = "2"
-syntect = { version = "4", default-features = false, features = ["default-fancy"] }
