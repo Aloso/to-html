@@ -1,13 +1,14 @@
-use clap::{App, AppSettings, Arg};
+use clap::{App, AppSettings, Arg, ArgMatches};
 use std::{
-    borrow::Cow,
     error::Error,
-    io::{Read, Write},
     process::{Command, Stdio},
 };
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let matches = App::new("to-html")
+mod cmd;
+mod html;
+
+fn clap_app<'a, 'b>() -> App<'a, 'b> {
+    App::new("to-html")
         .about(
             "Terminal wrapper that generates HTML from ANSI escape sequences\n\
             This requires that `bash` and `ansi-to-html` are installed.",
@@ -21,10 +22,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 .multiple(true)
                 .help("The command(s) to execute. Multiple commands are separated with '--'")
                 .required(true),
-            Arg::with_name("no-env")
-                .long("no-env")
-                .short("e")
-                .help("Don't print environment variables passed as arguments"),
             Arg::with_name("highlight")
                 .long("highlight")
                 .short("l")
@@ -43,39 +40,51 @@ fn main() -> Result<(), Box<dyn Error>> {
                     the 'arg' class becomes 'to-html-arg'",
                 ),
         ])
-        .get_matches();
+}
 
-    let no_env = matches.is_present("no-env");
-    let highlight: Vec<&str> = matches
+struct Args<'a> {
+    commands: Vec<&'a str>,
+    highlight: Vec<&'a str>,
+    prefix: String,
+}
+
+fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
+    let highlight = matches
         .values_of("highlight")
         .map(Iterator::collect)
         .unwrap_or_default();
 
-    let prefix = matches.value_of("prefix").map(|s| s.to_string() + "-");
-    let prefix = prefix.as_deref().unwrap_or_default();
+    let prefix = matches
+        .value_of("prefix")
+        .map(|s| s.to_string() + "-")
+        .unwrap_or_default();
 
-    let commands: Vec<&str> = matches
+    let commands = matches
         .values_of("command")
         .ok_or("command missing")?
         .collect();
+
+    Ok(Args {
+        commands,
+        highlight,
+        prefix,
+    })
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let matches = clap_app().get_matches();
+    let Args {
+        commands,
+        highlight,
+        prefix,
+    } = parse_args(&matches)?;
+
     let commands: Vec<&[&str]> = commands.split(|&s| s == "--").collect();
 
-    let mut result = format!("<pre class=\"{}text\">\n", prefix);
+    let mut result = format!("<pre class=\"{}terminal\">\n", prefix);
 
     for command_parts in commands {
-        result.push_str(&format!("<span class=\"{}arrow\">&gt;</span> ", prefix));
-
-        let command = concat_command(command_parts);
-
-        let cmd_out = run_command(&command)?;
-        let (stdout, stderr) = run_ansi_to_html(&dimmed_to_html(&cmd_out, prefix))?;
-
-        result.push_str(&command_to_html(command_parts, no_env, &highlight, prefix));
-        result.push('\n');
-        result.push_str(&stdout);
-        if let Some(stderr) = stderr {
-            result.push_str(&stderr);
-        }
+        result.push_str(&command_to_html(command_parts, &highlight, &prefix)?);
     }
 
     result.push_str(&format!(
@@ -89,106 +98,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn concat_command(command: &[&str]) -> String {
-    command
-        .iter()
-        .copied()
-        .map(|s| -> Cow<str> {
-            if s.contains(|c: char| c.is_ascii_whitespace() || matches!(c, '"' | '\'')) {
-                let mut result = String::from("\"");
-                for c in s.chars() {
-                    if matches!(c, '"' | '\'') {
-                        result.push('\\');
-                    }
-                    result.push(c);
-                }
-                result.push('"');
-                result.push(' ');
-                Cow::Owned(result)
-            } else {
-                Cow::Borrowed(s)
-            }
-        })
-        .collect::<Vec<Cow<str>>>()
-        .join(" ")
-}
-
-fn dimmed_to_html(input: &str, prefix: &str) -> String {
-    let mut pos = CharPos::None;
-    let mut open_tags = 0;
-    let mut result = String::new();
-
-    #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-    enum CharPos {
-        None,
-        Esc,
-        Bracket,
-        Two,
-        Zero,
-    }
-
-    for c in input.chars() {
-        match pos {
-            CharPos::None if c == '\x1b' => {
-                pos = CharPos::Esc;
-            }
-            CharPos::Esc => {
-                if c == '[' {
-                    pos = CharPos::Bracket;
-                } else {
-                    result.push('\x1b');
-                    result.push(c);
-                    pos = CharPos::None;
-                }
-            }
-            CharPos::Bracket => {
-                if c == '2' {
-                    pos = CharPos::Two;
-                } else if c == '0' {
-                    pos = CharPos::Zero;
-                } else {
-                    result.push_str("\x1b[");
-                    result.push(c);
-                    pos = CharPos::None;
-                }
-            }
-            CharPos::Two => {
-                if c == 'm' {
-                    pos = CharPos::None;
-                    result.push_str(&format!(r#"<span class="{}dim">"#, prefix));
-                    open_tags += 1;
-                } else {
-                    result.push_str("\x1b[2");
-                    result.push(c);
-                    pos = CharPos::None;
-                }
-            }
-            CharPos::Zero => {
-                if open_tags > 0 && c == 'm' {
-                    pos = CharPos::None;
-                    result.push_str("</span>");
-                    open_tags -= 1;
-                } else {
-                    result.push_str("\x1b[0");
-                    result.push(c);
-                    pos = CharPos::None;
-                }
-            }
-            _ => {
-                result.push(c);
-            }
-        }
-    }
-
-    result
-}
-
 fn command_to_html(
     command_parts: &[&str],
-    no_env: bool,
     highlight: &[&str],
     prefix: &str,
-) -> String {
+) -> Result<String, Box<dyn Error>> {
+    let mut result = format!("<span class=\"{}arrow\">&gt;</span> ", prefix);
+
+    let command = cmd::concat(command_parts);
+
+    let (cmd_out, cmd_err) = cmd::run(&command)?;
+    let stdout = run_ansi_to_html(&html::dimmed_to_html(&cmd_out, prefix))?;
+
+    result.push_str(&command_line_to_html(command_parts, &highlight, prefix));
+    result.push('\n');
+    if !cmd_err.is_empty() {
+        result.push_str(&cmd_err);
+        result.push('\n');
+    }
+    result.push_str(&stdout);
+    Ok(result)
+}
+
+fn command_line_to_html(command_parts: &[&str], highlight: &[&str], prefix: &str) -> String {
     let mut next = State::Start;
 
     #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -201,9 +133,8 @@ fn command_to_html(
     command_parts
         .iter()
         .copied()
-        .filter(|&part| !no_env || next != State::Start || !is_environment_variable(part))
         .map(move |part| {
-            let part_esc = &*esc_html(part);
+            let part_esc = &*html::esc_html(part);
 
             if part.contains(|c: char| c.is_ascii_whitespace()) {
                 next = State::Default;
@@ -226,7 +157,7 @@ fn command_to_html(
                 format!("<span class=\"{}pipe\">{}</span>", prefix, part_esc)
             } else if part == "&&" {
                 next = State::Start;
-                format!("<span class=\"{}op\">{}</span>", prefix, part_esc)
+                format!("<span class=\"{}op\">{}</span>\n ", prefix, part_esc)
             } else if part.starts_with('-') {
                 if let Some((i, _)) = part_esc.char_indices().find(|&(_, c)| c == '=') {
                     let (p1, p2) = part_esc.split_at(i);
@@ -247,54 +178,12 @@ fn command_to_html(
         .join(" ")
 }
 
-fn run_command(args: &str) -> Result<String, Box<dyn Error>> {
-    let output = Command::new("bash").args(&["-c", args]).output()?;
-    let result = output.stdout.to_vec();
-
-    Ok(String::from_utf8(result)?)
-}
-
-fn run_ansi_to_html(input: &str) -> Result<(String, Option<String>), Box<dyn Error>> {
-    let (mut output1, mut output2) = (String::new(), String::new());
-
+fn run_ansi_to_html(input: &str) -> Result<String, Box<dyn Error>> {
     let process = Command::new("ansi-to-html")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
-    process.stdin.unwrap().write_all(input.as_bytes())?;
-    process.stdout.unwrap().read_to_string(&mut output1)?;
+    let output = cmd::input(process, input)?.wait_with_output()?;
 
-    if let Some(mut stderr) = process.stderr {
-        stderr.read_to_string(&mut output2)?;
-        Ok((output1, Some(output2)))
-    } else {
-        Ok((output1, None))
-    }
-}
-
-fn is_environment_variable(s: &str) -> bool {
-    if let Some((i, _)) = s.char_indices().find(|&(_, c)| c == '=') {
-        let var_name = &s[..i];
-        var_name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_')
-    } else {
-        false
-    }
-}
-
-fn esc_html(input: &str) -> Cow<str> {
-    if input.contains(|c: char| matches!(c, '&' | '<' | '>')) {
-        Cow::Owned(input.chars().fold(String::new(), |mut acc, c| match c {
-            '&' => acc + "&amp;",
-            '<' => acc + "&lt;",
-            '>' => acc + "&gt;",
-            c => {
-                acc.push(c);
-                acc
-            }
-        }))
-    } else {
-        Cow::Borrowed(input)
-    }
+    Ok(cmd::stdout(&output)?)
 }

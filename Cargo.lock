@@ -42,6 +42,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "faketty"
+version = "0.1.0"
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -76,6 +80,7 @@ name = "to-html"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "faketty",
 ]
 
 [[package]]

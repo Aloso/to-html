@@ -31,15 +31,6 @@ to-html echo Hello\nworld \| grep 'H' \> somefile.txt
 # echo Hello\nworld | grep 'H' > somefile.txt
 ```
 
-You can pass environment variables to commands without displaying them, by using the `-e` flag:
-
-```fish
-to-html -e colo s ff3377 \| pastel desaturate .2 \| FORCE_ANSI_OUTPUT=1 colo s
-
-#  executed: colo s ff3377 | pastel desaturate .2 | FORCE_ANSI_OUTPUT=1 colo s
-# displayed: colo s ff3377 | pastel desaturate .2 | colo s
-```
-
 ## Installation
 
 ```fish
