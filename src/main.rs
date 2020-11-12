@@ -1,6 +1,7 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 use std::{
     error::Error,
+    fmt::Write,
     process::{Command, Stdio},
 };
 
@@ -39,13 +40,18 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
                     "Prefix for CSS classes. For example, with the 'to-html' prefix, \
                     the 'arg' class becomes 'to-html-arg'",
                 ),
+            Arg::with_name("no-run")
+                .long("no-run")
+                .help("Don't run the commands, just emit the HTML for the command line"),
         ])
 }
 
+#[derive(Debug)]
 struct Args<'a> {
     commands: Vec<&'a str>,
     highlight: Vec<&'a str>,
     prefix: String,
+    no_run: bool,
 }
 
 fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
@@ -64,63 +70,74 @@ fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
         .ok_or("command missing")?
         .collect();
 
+    let no_run = matches.is_present("no-run");
+
     Ok(Args {
         commands,
         highlight,
         prefix,
+        no_run,
     })
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = clap_app().get_matches();
-    let Args {
-        commands,
-        highlight,
-        prefix,
-    } = parse_args(&matches)?;
+    let args = parse_args(&matches)?;
 
-    let commands: Vec<&[&str]> = commands.split(|&s| s == "--").collect();
+    let commands: Vec<&[&str]> = args.commands.split(|&s| s == "--").collect();
 
-    let mut result = format!("<pre class=\"{}terminal\">\n", prefix);
+    let mut buf = String::new();
+    writeln!(buf, "<pre class=\"{}terminal\">", args.prefix)?;
 
     for command_parts in commands {
-        result.push_str(&command_to_html(command_parts, &highlight, &prefix)?);
+        if args.no_run {
+            command_prompt_to_html(&mut buf, command_parts, &args)?;
+        } else {
+            command_to_html(&mut buf, command_parts, &args)?;
+        }
     }
 
-    result.push_str(&format!(
-        "<span class=\"{p}arrow\">&gt;</span> <span class=\"{p}caret\"> </span>",
-        p = prefix
-    ));
-    result.push_str("\n</pre>");
+    if !args.no_run {
+        writeln!(
+            buf,
+            "<span class=\"{p}arrow\">&gt;</span> <span class=\"{p}caret\"> </span>",
+            p = args.prefix
+        )?;
+    }
+    write!(buf, "</pre>")?;
 
-    println!("{}", result);
+    println!("{}", buf);
 
     Ok(())
 }
 
 fn command_to_html(
+    buf: &mut String,
     command_parts: &[&str],
-    highlight: &[&str],
-    prefix: &str,
-) -> Result<String, Box<dyn Error>> {
-    let mut result = format!("<span class=\"{}arrow\">&gt;</span> ", prefix);
-
+    args: &Args,
+) -> Result<(), Box<dyn Error>> {
     let command = cmd::concat(command_parts);
 
     let (cmd_out, cmd_err) = cmd::run(&command)?;
-    let stdout = run_ansi_to_html(&html::dimmed_to_html(&cmd_out, prefix))?;
+    let stdout = run_ansi_to_html(&html::dimmed_to_html(&cmd_out, &args.prefix))?;
 
-    result.push_str(&command_line_to_html(command_parts, &highlight, prefix));
-    result.push('\n');
+    command_prompt_to_html(buf, command_parts, args)?;
+
     if !cmd_err.is_empty() {
-        result.push_str(&cmd_err);
-        result.push('\n');
+        writeln!(buf, "{}", cmd_err)?;
     }
-    result.push_str(&stdout);
-    Ok(result)
+    write!(buf, "{}", stdout)?;
+    Ok(())
 }
 
-fn command_line_to_html(command_parts: &[&str], highlight: &[&str], prefix: &str) -> String {
+fn command_prompt_to_html(
+    buf: &mut String,
+    command_parts: &[&str],
+    args: &Args,
+) -> Result<(), Box<dyn Error>> {
+    let prefix = &args.prefix;
+    write!(buf, "<span class=\"{}arrow\">&gt;</span>", prefix)?;
+
     let mut next = State::Start;
 
     #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -130,52 +147,51 @@ fn command_line_to_html(command_parts: &[&str], highlight: &[&str], prefix: &str
         Pipe,
     }
 
-    command_parts
-        .iter()
-        .copied()
-        .map(move |part| {
-            let part_esc = &*html::esc_html(part);
+    for &part in command_parts {
+        let part_esc = &*html::esc_html(part);
 
-            if part.contains(|c: char| c.is_ascii_whitespace()) {
-                next = State::Default;
-                format!(
-                    "<span class=\"{}str\">\"{}\"</span>",
-                    prefix,
-                    part_esc.escape_debug(),
-                )
-            } else if next == State::Pipe {
-                next = State::Default;
-                format!("<span class=\"{}pipe\">{}</span>", prefix, part_esc)
-            } else if next == State::Start {
-                next = State::Default;
-                format!("<span class=\"{}cmd\">{}</span>", prefix, part_esc)
-            } else if part == "|" {
-                next = State::Start;
-                format!("<span class=\"{}pipe\">{}</span>", prefix, part_esc)
-            } else if part == "<" || part == ">" {
-                next = State::Pipe;
-                format!("<span class=\"{}pipe\">{}</span>", prefix, part_esc)
-            } else if part == "&&" {
-                next = State::Start;
-                format!("<span class=\"{}op\">{}</span>\n ", prefix, part_esc)
-            } else if part.starts_with('-') {
-                if let Some((i, _)) = part_esc.char_indices().find(|&(_, c)| c == '=') {
-                    let (p1, p2) = part_esc.split_at(i);
-                    format!(
-                        "<span class=\"{}flag\">{}</span><span class=\"{}arg\">{}</span>",
-                        prefix, p1, prefix, p2,
-                    )
-                } else {
-                    format!("<span class=\"{}flag\">{}</span>", prefix, part_esc)
-                }
-            } else if highlight.contains(&part) {
-                format!("<span class=\"{}hl\">{}</span>", prefix, part_esc)
+        if part.contains(|c: char| c.is_ascii_whitespace()) {
+            next = State::Default;
+            write!(
+                buf,
+                "<span class=\"{}str\">\"{}\"</span>",
+                prefix,
+                part_esc.escape_debug(),
+            )?;
+        } else if next == State::Pipe {
+            next = State::Default;
+            write!(buf, "<span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
+        } else if next == State::Start {
+            next = State::Default;
+            write!(buf, "<span class=\"{}cmd\">{}</span>", prefix, part_esc)?;
+        } else if part == "|" {
+            next = State::Start;
+            write!(buf, "<span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
+        } else if part == "<" || part == ">" {
+            next = State::Pipe;
+            write!(buf, "<span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
+        } else if part == "&&" {
+            next = State::Start;
+            write!(buf, "<span class=\"{}op\">{}</span>\n ", prefix, part_esc)?;
+        } else if part.starts_with('-') {
+            if let Some((i, _)) = part_esc.char_indices().find(|&(_, c)| c == '=') {
+                let (p1, p2) = part_esc.split_at(i);
+                write!(
+                    buf,
+                    "<span class=\"{}flag\">{}</span><span class=\"{}arg\">{}</span>",
+                    prefix, p1, prefix, p2,
+                )?;
             } else {
-                format!("<span class=\"{}arg\">{}</span>", prefix, part_esc)
+                write!(buf, "<span class=\"{}flag\">{}</span>", prefix, part_esc)?;
             }
-        })
-        .collect::<Vec<String>>()
-        .join(" ")
+        } else if args.highlight.contains(&part) {
+            write!(buf, "<span class=\"{}hl\">{}</span>", prefix, part_esc)?;
+        } else {
+            write!(buf, "<span class=\"{}arg\">{}</span>", prefix, part_esc)?;
+        }
+    }
+    writeln!(buf)?;
+    Ok(())
 }
 
 fn run_ansi_to_html(input: &str) -> Result<String, Box<dyn Error>> {
