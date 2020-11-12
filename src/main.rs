@@ -130,9 +130,13 @@ fn command_to_html(
 
     command_prompt_to_html(buf, command_parts, args)?;
 
-    let (cmd_out, _cmd_err) = cmd::run(&command)?;
+    let (cmd_out, cmd_err, _) = cmd::run(&command)?;
     if !cmd_out.is_empty() {
         let html = to_html(&cmd_out, &args.prefix)?;
+        write!(buf, "{}", html)?;
+    }
+    if !cmd_err.is_empty() {
+        let html = to_html(&cmd_err, &args.prefix)?;
         write!(buf, "{}", html)?;
     }
 

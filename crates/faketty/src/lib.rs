@@ -20,6 +20,20 @@ use std::{iter, process};
 /// This means that the command will assume that terminal colors and
 /// other terminal features are available.
 pub fn bash_command(command: &str) -> process::Command {
+    let script_command = make_script_command(&command);
+
+    let mut command = process::Command::new("bash");
+    command
+        .args(&["-c", &script_command])
+        .stdout(process::Stdio::piped())
+        .stderr(process::Stdio::piped());
+
+    command
+}
+
+/// Wraps the command in the `script` command that can execute it
+/// pretending to be a tty.
+pub fn make_script_command(command: &str) -> String {
     let escaped = escape_bash_string(command);
 
     #[cfg(target_os = "linux")]
@@ -31,12 +45,7 @@ pub fn bash_command(command: &str) -> process::Command {
     #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     panic!("This platform is not supported");
 
-    let mut command = process::Command::new("bash");
-    command
-        .args(&["-c", &script_command])
-        .stdout(process::Stdio::piped());
-
-    command
+    script_command
 }
 
 fn escape_bash_string(s: &str) -> String {
@@ -50,10 +59,56 @@ fn escape_bash_string_char(c: char) -> impl Iterator<Item = char> {
         .chain(iter::once(c))
 }
 
-#[test]
-fn test_escaping() {
-    assert_eq!(
-        escape_bash_string(r#"Hello $`"' world!"#).as_str(),
-        r#"Hello \$\`\"' world!"#
-    );
+#[cfg(tests)]
+mod tests {
+    use std::io::Write;
+    use std::process;
+
+    use crate::{bash_command, escape_bash_string, make_script_command};
+
+    #[test]
+    fn test_escaping() {
+        assert_eq!(
+            escape_bash_string(r#"Hello $`"' world!"#).as_str(),
+            r#"Hello \$\`\"' world!"#
+        );
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    fn test_script_wrapping() {
+        assert_eq!(
+            make_script_command(r#"echo "Hello $`' world!""#).as_str(),
+            r#"script -qec "echo \"Hello \$\`' world!\"" /dev/null"#
+        );
+    }
+
+    #[test]
+    fn test_echo() {
+        let output = bash_command(r#"echo "Hello \$\`' world!""#)
+            .output()
+            .unwrap();
+        assert_eq!(to_string(output.stdout).trim_end(), r#"Hello $`' world!"#);
+    }
+
+    #[test]
+    fn test_echo_custom() {
+        let process = process::Command::new("bash")
+            .stdin(process::Stdio::piped())
+            .stdout(process::Stdio::piped())
+            .stderr(process::Stdio::piped())
+            .spawn()
+            .unwrap();
+
+        let mut stdin = process.stdin.as_ref().unwrap();
+        stdin.write_all(br#"echo "Hello \$\`' world!""#).unwrap();
+        let output = process.wait_with_output().unwrap();
+
+        assert_eq!(to_string(output.stdout).trim_end(), r#"Hello $`' world!"#);
+        assert_eq!(to_string(output.stderr), "");
+    }
+
+    fn to_string(v: Vec<u8>) -> String {
+        String::from_utf8(v).unwrap()
+    }
 }
