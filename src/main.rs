@@ -75,7 +75,7 @@ fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
 
     let prefix = matches
         .value_of("prefix")
-        .map(|s| s.to_string() + "-")
+        .map(|s| format!("{}-", html::Esc(s)))
         .unwrap_or_default();
 
     let commands = matches
@@ -139,6 +139,7 @@ fn command_to_html(
     command_prompt_to_html(buf, command_parts, args)?;
 
     let (cmd_out, cmd_err) = cmd::run(&command)?;
+    let cmd_out = html::Esc(&cmd_out).to_string();
     let stdout = run_ansi_to_html(&html::dimmed_to_html(&cmd_out, &args.prefix))?;
 
     if !cmd_err.is_empty() {
@@ -165,7 +166,7 @@ fn command_prompt_to_html(
     }
 
     for &part in command_parts {
-        let part_esc = &*html::esc_html(part);
+        let part_esc = html::Esc(part);
         let prefix = &args.prefix;
 
         if part.contains(|c: char| c.is_ascii_whitespace()) {
@@ -174,7 +175,7 @@ fn command_prompt_to_html(
                 buf,
                 " <span class=\"{}str\">\"{}\"</span>",
                 prefix,
-                part_esc.escape_debug(),
+                part_esc.to_string().escape_debug(),
             )?;
         } else if next == State::Pipe {
             next = State::Default;
@@ -192,8 +193,10 @@ fn command_prompt_to_html(
             next = State::Start;
             write!(buf, " <span class=\"{}op\">{}</span>\n ", prefix, part_esc)?;
         } else if part.starts_with('-') {
-            if let Some((i, _)) = part_esc.char_indices().find(|&(_, c)| c == '=') {
-                let (p1, p2) = part_esc.split_at(i);
+            if let Some((i, _)) = part.char_indices().find(|&(_, c)| c == '=') {
+                let (p1, p2) = part.split_at(i);
+                let (p1, p2) = (html::Esc(p1), html::Esc(p2));
+
                 write!(buf, " <span class=\"{}flag\">{}</span>", prefix, p1)?;
                 write!(buf, "<span class=\"{}arg\">{}</span>", prefix, p2)?;
             } else {
@@ -228,7 +231,7 @@ fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
             write!(
                 buf,
                 "<span class=\"{p}cwd\">{}</span> <span class=\"{p}shell\">$</span>",
-                cwd,
+                html::Esc(&cwd),
                 p = args.prefix
             )?;
         }

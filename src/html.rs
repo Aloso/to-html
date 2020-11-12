@@ -1,18 +1,18 @@
-use std::borrow::Cow;
+use std::fmt;
 
-pub fn esc_html(input: &str) -> Cow<str> {
-    if input.contains(|c: char| matches!(c, '&' | '<' | '>')) {
-        Cow::Owned(input.chars().fold(String::new(), |mut acc, c| match c {
-            '&' => acc + "&amp;",
-            '<' => acc + "&lt;",
-            '>' => acc + "&gt;",
-            c => {
-                acc.push(c);
-                acc
+pub struct Esc<'a>(pub &'a str);
+
+impl fmt::Display for Esc<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for c in self.0.chars() {
+            match c {
+                '&' => fmt::Display::fmt("&amp;", f)?,
+                '<' => fmt::Display::fmt("&lt;", f)?,
+                '>' => fmt::Display::fmt("&gt;", f)?,
+                c => fmt::Display::fmt(&c, f)?,
             }
-        }))
-    } else {
-        Cow::Borrowed(input)
+        }
+        Ok(())
     }
 }
 
