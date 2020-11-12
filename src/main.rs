@@ -1,14 +1,6 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
-use std::{
-    borrow::Cow,
-    error::Error,
-    fmt::Write,
-    path::PathBuf,
-    process::{Command, Stdio},
-};
-
-mod cmd;
-mod html;
+use std::{borrow::Cow, error::Error, fmt::Write, path::PathBuf};
+use to_html::{cmd, html, to_html};
 
 fn clap_app<'a, 'b>() -> App<'a, 'b> {
     App::new("to-html")
@@ -138,14 +130,12 @@ fn command_to_html(
 
     command_prompt_to_html(buf, command_parts, args)?;
 
-    let (cmd_out, cmd_err) = cmd::run(&command)?;
-    let cmd_out = html::Esc(&cmd_out).to_string();
-    let stdout = run_ansi_to_html(&html::dimmed_to_html(&cmd_out, &args.prefix))?;
-
-    if !cmd_err.is_empty() {
-        writeln!(buf, "{}", cmd_err)?;
+    let (cmd_out, _cmd_err) = cmd::run(&command)?;
+    if !cmd_out.is_empty() {
+        let html = to_html(&cmd_out, &args.prefix)?;
+        write!(buf, "{}", html)?;
     }
-    write!(buf, "{}", stdout)?;
+
     Ok(())
 }
 
@@ -237,14 +227,4 @@ fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
         }
     }
     Ok(())
-}
-
-fn run_ansi_to_html(input: &str) -> Result<String, Box<dyn Error>> {
-    let process = Command::new("ansi-to-html")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-    let output = cmd::input(process, input)?.wait_with_output()?;
-
-    Ok(cmd::stdout(&output)?)
 }
