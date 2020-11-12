@@ -3,6 +3,7 @@ name = "to-html"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 edition = "2018"
+default-run = "to-html"
 
 [workspace]
 members = ["crates/*"]
@@ -13,3 +14,8 @@ members = ["crates/*"]
 clap = "2"
 faketty = { path = "./crates/faketty", version = "0.1" }
 dirs-next = "2"
+regex = "1"
+
+[[bin]]
+name = "to-html"
+path = "src/bin/to_html/main.rs"

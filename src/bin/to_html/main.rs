@@ -1,6 +1,8 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 use std::{borrow::Cow, error::Error, fmt::Write, path::PathBuf};
-use to_html::{cmd, html, to_html};
+use to_html::{to_html, Esc};
+
+pub mod cmd;
 
 fn clap_app<'a, 'b>() -> App<'a, 'b> {
     App::new("to-html")
@@ -67,7 +69,7 @@ fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
 
     let prefix = matches
         .value_of("prefix")
-        .map(|s| format!("{}-", html::Esc(s)))
+        .map(|s| format!("{}-", Esc(s)))
         .unwrap_or_default();
 
     let commands = matches
@@ -132,11 +134,11 @@ fn command_to_html(
 
     let (cmd_out, cmd_err, _) = cmd::run(&command)?;
     if !cmd_out.is_empty() {
-        let html = to_html(&cmd_out, &args.prefix)?;
+        let html = to_html(&cmd_out)?;
         write!(buf, "{}", html)?;
     }
     if !cmd_err.is_empty() {
-        let html = to_html(&cmd_err, &args.prefix)?;
+        let html = to_html(&cmd_err)?;
         write!(buf, "{}", html)?;
     }
 
@@ -160,7 +162,7 @@ fn command_prompt_to_html(
     }
 
     for &part in command_parts {
-        let part_esc = html::Esc(part);
+        let part_esc = Esc(part);
         let prefix = &args.prefix;
 
         if part.contains(|c: char| c.is_ascii_whitespace()) {
@@ -189,7 +191,7 @@ fn command_prompt_to_html(
         } else if part.starts_with('-') {
             if let Some((i, _)) = part.char_indices().find(|&(_, c)| c == '=') {
                 let (p1, p2) = part.split_at(i);
-                let (p1, p2) = (html::Esc(p1), html::Esc(p2));
+                let (p1, p2) = (Esc(p1), Esc(p2));
 
                 write!(buf, " <span class=\"{}flag\">{}</span>", prefix, p1)?;
                 write!(buf, "<span class=\"{}arg\">{}</span>", prefix, p2)?;
@@ -225,7 +227,7 @@ fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
             write!(
                 buf,
                 "<span class=\"{p}cwd\">{}</span> <span class=\"{p}shell\">$</span>",
-                html::Esc(&cwd),
+                Esc(&cwd),
                 p = args.prefix
             )?;
         }

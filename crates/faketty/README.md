@@ -10,6 +10,5 @@ Note that some programs might still behave differently than they would in a real
 let output = faketty::bash_command("ls --color=auto").output().unwrap();
 assert!(output.status.success());
 
-let _stdout: String = String::from_utf8(output.stdout.to_vec())
-    .expect("Invalid UTF-8");
+let _stdout: String = String::from_utf8(output.stdout).unwrap();
 ```

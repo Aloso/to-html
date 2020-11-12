@@ -1,23 +1,14 @@
-use std::{
-    error::Error,
-    process::{Command, Stdio},
-};
+use std::error::Error;
 
-pub mod cmd;
+pub mod ansi;
+pub mod color;
+pub mod esc;
 pub mod html;
 
-pub fn to_html(ansi_string: &str, css_prefix: &str) -> Result<String, Box<dyn Error>> {
-    let input = html::Esc(ansi_string).to_string();
-    let stdout = run_ansi_to_html(&html::dimmed_to_html(&input, css_prefix))?;
+pub use esc::Esc;
+
+pub fn to_html(ansi_string: &str) -> Result<String, Box<dyn Error>> {
+    let input = Esc(ansi_string).to_string();
+    let stdout = html::ansi_to_html(&input)?;
     Ok(stdout)
-}
-
-fn run_ansi_to_html(input: &str) -> Result<String, Box<dyn Error>> {
-    let process = Command::new("ansi-to-html")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()?;
-    let output = cmd::input(process, input)?.wait_with_output()?;
-
-    Ok(cmd::stdout(&output)?)
 }

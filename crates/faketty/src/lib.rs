@@ -9,8 +9,7 @@
 //! let output = faketty::bash_command("ls --color=auto").output().unwrap();
 //! assert!(output.status.success());
 //!
-//! let _stdout: String = String::from_utf8(output.stdout.to_vec())
-//!     .expect("Invalid UTF-8");
+//! let _stdout: String = String::from_utf8(output.stdout).unwrap();
 //! ```
 
 use std::{iter, process};
@@ -33,6 +32,55 @@ pub fn bash_command(command: &str) -> process::Command {
 
 /// Wraps the command in the `script` command that can execute it
 /// pretending to be a tty.
+///
+/// This can be executed in two ways:
+///  - by passing it to `bash -c <command>`
+///    (you can use the `bash_command` function for this) or
+///  - by running `bash` and piping the command to stdin,
+///    followed with the command `exit`
+///
+/// ## Examples
+///
+/// Pass it to `bash -c <command>`:
+///
+/// ```
+/// use std::process::{Command, Stdio};
+/// use faketty::make_script_command;
+///
+/// let script_command = make_script_command("ls");
+///
+/// let output = Command::new("bash")
+///     .args(&["-c", &script_command])
+///     .stdout(Stdio::piped())
+///     .stderr(Stdio::piped())
+///     .output().unwrap();
+///
+/// assert!(output.status.success());
+/// ```
+///
+/// Pipe it to `bash`:
+///
+/// ```
+/// use std::process::{Command, Stdio};
+/// use std::io::Write;
+/// use faketty::make_script_command;
+///
+/// let mut script_command = make_script_command("ls");
+/// script_command.push_str("\nexit");
+///
+/// let process = Command::new("bash")
+///     .stdin(Stdio::piped())
+///     .stdout(Stdio::piped())
+///     .stderr(Stdio::piped())
+///     .spawn()
+///     .unwrap();
+///
+/// let mut stdin = process.stdin.as_ref().unwrap();
+/// stdin.write_all(script_command.as_bytes()).unwrap();
+/// let output = process.wait_with_output().unwrap();
+///
+/// assert!(output.status.success());
+/// ```
 pub fn make_script_command(command: &str) -> String {
     let escaped = escape_bash_string(command);
 
@@ -59,7 +107,7 @@ fn escape_bash_string_char(c: char) -> impl Iterator<Item = char> {
         .chain(iter::once(c))
 }
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use std::io::Write;
     use std::process;

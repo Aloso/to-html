@@ -25,13 +25,7 @@ pub fn concat(command: &[&str]) -> String {
 }
 
 pub fn run(args: &str) -> Result<(String, String, process::ExitStatus), Box<dyn error::Error>> {
-    let process = process::Command::new("bash")
-        .stdin(process::Stdio::piped())
-        .stdout(process::Stdio::piped())
-        .stderr(process::Stdio::piped())
-        .spawn()?;
-    let process = input(process, &format!("{}\necho \"\n$PWD\"\nexit", args))?;
-    let output = process.wait_with_output()?;
+    let output = faketty::bash_command(&format!("{}; echo \"\n$PWD\"", args)).output()?;
 
     let stderr = stderr(&output)?;
     let stdout = stdout(&output)?;
