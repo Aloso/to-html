@@ -3,6 +3,7 @@ use std::{
     borrow::Cow,
     error::Error,
     fmt::Write,
+    path::PathBuf,
     process::{Command, Stdio},
 };
 
@@ -57,7 +58,13 @@ struct Args<'a> {
     highlight: Vec<&'a str>,
     prefix: String,
     no_run: bool,
-    cwd: bool,
+    shell: Shell,
+}
+
+#[derive(Debug)]
+enum Shell {
+    Arrow,
+    Cwd { home: Option<PathBuf> },
 }
 
 fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
@@ -77,14 +84,20 @@ fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
         .collect();
 
     let no_run = matches.is_present("no-run");
-    let cwd = matches.is_present("cwd");
+    let shell = if matches.is_present("cwd") {
+        Shell::Cwd {
+            home: dirs_next::home_dir(),
+        }
+    } else {
+        Shell::Arrow
+    };
 
     Ok(Args {
         commands,
         highlight,
         prefix,
         no_run,
-        cwd,
+        shell,
     })
 }
 
@@ -197,25 +210,28 @@ fn command_prompt_to_html(
 }
 
 fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
-    if args.cwd {
-        let cwd = std::env::current_dir()?;
-        let cwd = cwd.to_str().ok_or("invalid UTF-8 in cwd")?;
-        let cwd = match dirs_next::home_dir() {
-            Some(home) => {
-                let home = home.to_str().ok_or("invalid UTF-8 in home dir")?;
-                Cow::Owned(cwd.replace(home, "~"))
-            }
-            None => Cow::Borrowed(cwd),
-        };
+    match &args.shell {
+        Shell::Arrow => {
+            write!(buf, "<span class=\"{}shell\">&gt;</span>", args.prefix)?;
+        }
+        Shell::Cwd { home } => {
+            let cwd = std::env::current_dir()?;
+            let cwd = cwd.to_str().ok_or("invalid UTF-8 in cwd")?;
+            let cwd = match home {
+                Some(home) => {
+                    let home = home.to_str().ok_or("invalid UTF-8 in home dir")?;
+                    Cow::Owned(cwd.replace(home, "~"))
+                }
+                None => Cow::Borrowed(cwd),
+            };
 
-        write!(
-            buf,
-            "<span class=\"{p}cwd\">{}</span> <span class=\"{p}arrow\">$</span>",
-            cwd,
-            p = args.prefix
-        )?;
-    } else {
-        write!(buf, "<span class=\"{}arrow\">&gt;</span>", args.prefix)?;
+            write!(
+                buf,
+                "<span class=\"{p}cwd\">{}</span> <span class=\"{p}shell\">$</span>",
+                cwd,
+                p = args.prefix
+            )?;
+        }
     }
     Ok(())
 }
