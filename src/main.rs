@@ -1,5 +1,6 @@
 use clap::{App, AppSettings, Arg, ArgMatches};
 use std::{
+    borrow::Cow,
     error::Error,
     fmt::Write,
     process::{Command, Stdio},
@@ -43,6 +44,10 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
             Arg::with_name("no-run")
                 .long("no-run")
                 .help("Don't run the commands, just emit the HTML for the command line"),
+            Arg::with_name("cwd")
+                .long("cwd")
+                .short("c")
+                .help("Print the (abbreviated) current working directory in the command prompt"),
         ])
 }
 
@@ -52,6 +57,7 @@ struct Args<'a> {
     highlight: Vec<&'a str>,
     prefix: String,
     no_run: bool,
+    cwd: bool,
 }
 
 fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
@@ -71,12 +77,14 @@ fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
         .collect();
 
     let no_run = matches.is_present("no-run");
+    let cwd = matches.is_present("cwd");
 
     Ok(Args {
         commands,
         highlight,
         prefix,
         no_run,
+        cwd,
     })
 }
 
@@ -98,11 +106,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if !args.no_run {
-        writeln!(
-            buf,
-            "<span class=\"{p}arrow\">&gt;</span> <span class=\"{p}caret\"> </span>",
-            p = args.prefix
-        )?;
+        shell_prompt(&mut buf, &args)?;
+        writeln!(buf, " <span class=\"{p}caret\"> </span>", p = args.prefix)?;
     }
     write!(buf, "</pre>")?;
 
@@ -118,10 +123,10 @@ fn command_to_html(
 ) -> Result<(), Box<dyn Error>> {
     let command = cmd::concat(command_parts);
 
+    command_prompt_to_html(buf, command_parts, args)?;
+
     let (cmd_out, cmd_err) = cmd::run(&command)?;
     let stdout = run_ansi_to_html(&html::dimmed_to_html(&cmd_out, &args.prefix))?;
-
-    command_prompt_to_html(buf, command_parts, args)?;
 
     if !cmd_err.is_empty() {
         writeln!(buf, "{}", cmd_err)?;
@@ -135,8 +140,7 @@ fn command_prompt_to_html(
     command_parts: &[&str],
     args: &Args,
 ) -> Result<(), Box<dyn Error>> {
-    let prefix = &args.prefix;
-    write!(buf, "<span class=\"{}arrow\">&gt;</span>", prefix)?;
+    shell_prompt(buf, args)?;
 
     let mut next = State::Start;
 
@@ -149,48 +153,70 @@ fn command_prompt_to_html(
 
     for &part in command_parts {
         let part_esc = &*html::esc_html(part);
+        let prefix = &args.prefix;
 
         if part.contains(|c: char| c.is_ascii_whitespace()) {
             next = State::Default;
             write!(
                 buf,
-                "<span class=\"{}str\">\"{}\"</span>",
+                " <span class=\"{}str\">\"{}\"</span>",
                 prefix,
                 part_esc.escape_debug(),
             )?;
         } else if next == State::Pipe {
             next = State::Default;
-            write!(buf, "<span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
+            write!(buf, " <span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
         } else if next == State::Start {
             next = State::Default;
-            write!(buf, "<span class=\"{}cmd\">{}</span>", prefix, part_esc)?;
+            write!(buf, " <span class=\"{}cmd\">{}</span>", prefix, part_esc)?;
         } else if part == "|" {
             next = State::Start;
-            write!(buf, "<span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
+            write!(buf, " <span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
         } else if part == "<" || part == ">" {
             next = State::Pipe;
-            write!(buf, "<span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
+            write!(buf, " <span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
         } else if part == "&&" {
             next = State::Start;
-            write!(buf, "<span class=\"{}op\">{}</span>\n ", prefix, part_esc)?;
+            write!(buf, " <span class=\"{}op\">{}</span>\n ", prefix, part_esc)?;
         } else if part.starts_with('-') {
             if let Some((i, _)) = part_esc.char_indices().find(|&(_, c)| c == '=') {
                 let (p1, p2) = part_esc.split_at(i);
-                write!(
-                    buf,
-                    "<span class=\"{}flag\">{}</span><span class=\"{}arg\">{}</span>",
-                    prefix, p1, prefix, p2,
-                )?;
+                write!(buf, " <span class=\"{}flag\">{}</span>", prefix, p1)?;
+                write!(buf, "<span class=\"{}arg\">{}</span>", prefix, p2)?;
             } else {
-                write!(buf, "<span class=\"{}flag\">{}</span>", prefix, part_esc)?;
+                write!(buf, " <span class=\"{}flag\">{}</span>", prefix, part_esc)?;
             }
         } else if args.highlight.contains(&part) {
-            write!(buf, "<span class=\"{}hl\">{}</span>", prefix, part_esc)?;
+            write!(buf, " <span class=\"{}hl\">{}</span>", prefix, part_esc)?;
         } else {
-            write!(buf, "<span class=\"{}arg\">{}</span>", prefix, part_esc)?;
+            write!(buf, " <span class=\"{}arg\">{}</span>", prefix, part_esc)?;
         }
     }
     writeln!(buf)?;
+    Ok(())
+}
+
+fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
+    if args.cwd {
+        let cwd = std::env::current_dir()?;
+        let cwd = cwd.to_str().ok_or("invalid UTF-8 in cwd")?;
+        let cwd = match dirs_next::home_dir() {
+            Some(home) => {
+                let home = home.to_str().ok_or("invalid UTF-8 in home dir")?;
+                Cow::Owned(cwd.replace(home, "~"))
+            }
+            None => Cow::Borrowed(cwd),
+        };
+
+        write!(
+            buf,
+            "<span class=\"{p}cwd\">{}</span> <span class=\"{p}arrow\">$</span>",
+            cwd,
+            p = args.prefix
+        )?;
+    } else {
+        write!(buf, "<span class=\"{}arrow\">&gt;</span>", args.prefix)?;
+    }
     Ok(())
 }
 

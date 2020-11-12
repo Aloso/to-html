@@ -12,3 +12,4 @@ members = ["crates/*"]
 [dependencies]
 clap = "2"
 faketty = { path = "./crates/faketty", version = "0.1" }
+dirs-next = "2"
