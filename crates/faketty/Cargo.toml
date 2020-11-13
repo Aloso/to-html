@@ -2,7 +2,15 @@
 name = "faketty"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
+description = "Run command with bash pretending to be a tty"
+categories = []
+repository = "https://github.com/Aloso/to-html"
+documentation = "https://docs.rs/faketty"
+homepage = "https://github.com/Aloso/to-html/tree/master/crates/faketty"
+readme = "README.md"
 edition = "2018"
+keywords = ["cli", "terminal"]
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

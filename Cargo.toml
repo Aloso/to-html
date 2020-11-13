@@ -3,7 +3,7 @@ name = "to-html"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 edition = "2018"
-default-run = "to-html"
+license = "MIT"
 
 [workspace]
 members = ["crates/*"]
@@ -11,11 +11,7 @@ members = ["crates/*"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "2"
 faketty = { path = "./crates/faketty", version = "0.1" }
+ansi-to-html = { path = "./crates/ansi-to-html", version = "0.1" }
+clap = "2"
 dirs-next = "2"
-regex = "1"
-
-[[bin]]
-name = "to-html"
-path = "src/bin/to_html/main.rs"

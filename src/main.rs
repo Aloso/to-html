@@ -1,6 +1,6 @@
+use ansi_to_html::Esc;
 use clap::{App, AppSettings, Arg, ArgMatches};
 use std::{borrow::Cow, error::Error, fmt::Write, path::PathBuf};
-use to_html::{to_html, Esc};
 
 pub mod cmd;
 
@@ -134,11 +134,11 @@ fn command_to_html(
 
     let (cmd_out, cmd_err, _) = cmd::run(&command)?;
     if !cmd_out.is_empty() {
-        let html = to_html(&cmd_out)?;
+        let html = ansi_to_html::convert_escaped(&cmd_out)?;
         write!(buf, "{}", html)?;
     }
     if !cmd_err.is_empty() {
-        let html = to_html(&cmd_err)?;
+        let html = ansi_to_html::convert_escaped(&cmd_err)?;
         write!(buf, "{}", html)?;
     }
 

@@ -1,6 +1,6 @@
-use std::{error::Error, num::ParseIntError};
+use std::num::ParseIntError;
 
-use crate::color::Color;
+use crate::{Color, Error};
 
 /// Iterator that consumes a sequence of numbers and emits ANSI escape sequences.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -21,7 +21,7 @@ impl<T> Iterator for AnsiIter<T>
 where
     T: Iterator<Item = Result<u8, ParseIntError>>,
 {
-    type Item = Result<Ansi, Box<dyn Error>>;
+    type Item = Result<Ansi, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.inner.next() {
@@ -32,7 +32,7 @@ where
     }
 }
 
-fn iter_next<I>(code: u8, iter: I) -> Result<Ansi, Box<dyn Error>>
+fn iter_next<I>(code: u8, iter: I) -> Result<Ansi, Error>
 where
     I: Iterator<Item = Result<u8, ParseIntError>>,
 {
@@ -52,19 +52,23 @@ where
         24 => Ansi::UnderlineOff,
         25..=28 => Ansi::Noop,
         29 => Ansi::CrossedOutOff,
-        30..=37 => Ansi::ForgroundColor(Color::parse_4bit(code - 30)?),
+        30..=37 => Ansi::ForgroundColor(Color::parse_4bit(code - 30)),
         38 => Ansi::ForgroundColor(Color::parse_better(iter)?),
         39 => Ansi::DefaultForegroundColor,
-        40..=47 => Ansi::BackgroundColor(Color::parse_4bit(code - 40)?),
+        40..=47 => Ansi::BackgroundColor(Color::parse_4bit(code - 40)),
         48 => Ansi::BackgroundColor(Color::parse_better(iter)?),
         49 => Ansi::DefaultBackgroundColor,
         50..=55 => Ansi::Noop,
         58..=59 => Ansi::Noop,
         60..=65 => Ansi::Noop,
         73..=74 => Ansi::Noop,
-        90..=97 => Ansi::ForgroundColor(Color::parse_4bit_bright(code - 90)?),
-        100..=107 => Ansi::BackgroundColor(Color::parse_4bit_bright(code - 100)?),
-        _ => return Err("Invalid ANSI code".into()),
+        90..=97 => Ansi::ForgroundColor(Color::parse_4bit_bright(code - 90)),
+        100..=107 => Ansi::BackgroundColor(Color::parse_4bit_bright(code - 100)),
+        _ => {
+            return Err(Error::InvalidAnsi {
+                msg: format!("Unexpected code {}", code),
+            })
+        }
     })
 }
 

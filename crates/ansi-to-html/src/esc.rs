@@ -17,14 +17,14 @@ use std::fmt;
 /// In a `format!`-like macro:
 ///
 /// ```
-/// # use to_html::Esc;
+/// # use ansi_to_html::Esc;
 /// assert_eq!(format!("{}", Esc("<h1>")).as_str(), "&lt;h1&gt;");
 /// ```
 ///
 /// Convert it to a String directly:
 ///
 /// ```
-/// # use to_html::Esc;
+/// # use ansi_to_html::Esc;
 /// assert_eq!(Esc("<h1>").to_string().as_str(), "&lt;h1&gt;");
 /// ```
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

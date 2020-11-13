@@ -1,0 +1,24 @@
+[package]
+name = "ansi-to-html"
+version = "0.1.0"
+authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
+description = "ANSI escape codes to HTML converter"
+categories = ["command-line-interface", "encoding"]
+repository = "https://github.com/Aloso/to-html"
+documentation = "https://docs.rs/ansi-to-html"
+homepage = "https://github.com/Aloso/to-html/tree/master/crates/ansi-to-html"
+readme = "README.md"
+edition = "2018"
+license = "MIT"
+keywords = ["color", "cli", "terminal", "html"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+regex = "1"
+thiserror = "1"
+once_cell = { version = "1.5", optional = true }
+
+[features]
+default = []
+lazy-init = ["once_cell"]

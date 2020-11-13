@@ -1,4 +1,6 @@
-use std::{error::Error, fmt, num::ParseIntError};
+use std::{fmt, num::ParseIntError};
+
+use crate::Error;
 
 /// An ANSI color.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -9,8 +11,8 @@ pub(crate) enum Color {
 }
 
 impl Color {
-    pub(crate) fn parse_4bit(code: u8) -> Result<Self, Box<dyn Error>> {
-        Ok(Color::FourBit(match code {
+    pub(crate) fn parse_4bit(code: u8) -> Self {
+        Color::FourBit(match code {
             0 => FourBitColor::Black,
             1 => FourBitColor::Red,
             2 => FourBitColor::Green,
@@ -20,11 +22,11 @@ impl Color {
             6 => FourBitColor::Cyan,
             7 => FourBitColor::White,
             _ => unreachable!("4 bit colors only"),
-        }))
+        })
     }
 
-    pub(crate) fn parse_4bit_bright(code: u8) -> Result<Self, Box<dyn Error>> {
-        Ok(Color::FourBit(match code {
+    pub(crate) fn parse_4bit_bright(code: u8) -> Self {
+        Color::FourBit(match code {
             0 => FourBitColor::BrightBlack,
             1 => FourBitColor::BrightRed,
             2 => FourBitColor::BrightGreen,
@@ -34,26 +36,41 @@ impl Color {
             6 => FourBitColor::BrightCyan,
             7 => FourBitColor::BrightWhite,
             _ => unreachable!("4 bit colors only"),
-        }))
+        })
     }
 
-    pub(crate) fn parse_better<I>(mut iter: I) -> Result<Self, Box<dyn Error>>
+    pub(crate) fn parse_better<I>(mut iter: I) -> Result<Self, Error>
     where
         I: Iterator<Item = Result<u8, ParseIntError>>,
     {
-        let code = iter.next().transpose()?.ok_or("Missing ANSI code")?;
+        let code = iter
+            .next()
+            .transpose()?
+            .ok_or_else(Error::invalid_ansi("Missing 2 or 5"))?;
         Ok(match code {
             5 => {
-                let color = iter.next().transpose()?.ok_or("Missing ANSI 8-bit color")?;
+                let color = iter
+                    .next()
+                    .transpose()?
+                    .ok_or_else(Error::invalid_ansi("Missing 8-bit color"))?;
                 Color::EightBit(EightBitColor::new(color))
             }
             2 => {
-                let r = iter.next().transpose()?.ok_or("Missing ANSI red")?;
-                let g = iter.next().transpose()?.ok_or("Missing ANSI green")?;
-                let b = iter.next().transpose()?.ok_or("Missing ANSI blue")?;
+                let r = iter.next().transpose()?;
+                let g = iter.next().transpose()?;
+                let b = iter.next().transpose()?;
+
+                let r = r.ok_or_else(Error::invalid_ansi("Missing ANSI red"))?;
+                let g = g.ok_or_else(Error::invalid_ansi("Missing ANSI green"))?;
+                let b = b.ok_or_else(Error::invalid_ansi("Missing ANSI blue"))?;
+
                 Color::Rgb(RgbColor { r, g, b })
             }
-            _ => return Err("Invalid ANSI color code".into()),
+            _ => {
+                return Err(Error::InvalidAnsi {
+                    msg: format!("Expected 2 or 5, got {}", code),
+                })
+            }
         })
     }
 }

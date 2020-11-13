@@ -1,10 +1,6 @@
 use regex::Regex;
-use std::error::Error;
 
-use crate::{
-    ansi::{Ansi, AnsiIter},
-    color::Color,
-};
+use crate::{Ansi, AnsiIter, Color, Error};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Style {
@@ -50,11 +46,9 @@ impl Style {
     }
 }
 
-/// Convert ANSI sequences to HTML
-pub fn ansi_to_html(mut input: &str) -> Result<String, Box<dyn Error>> {
+/// Convert ANSI sequences to html. This does NOT escape html characters such as `<` and `&`.
+pub fn ansi_to_html(mut input: &str, ansi_regex: &Regex) -> Result<String, Error> {
     let mut converter = AnsiConverter::default();
-
-    let ansi_regex = Regex::new("\x1b\\[[0-9;?]*[A-HJKSTfhilmnsu]").unwrap();
 
     loop {
         match ansi_regex.find(input) {
@@ -90,16 +84,9 @@ pub fn ansi_to_html(mut input: &str) -> Result<String, Box<dyn Error>> {
             }
         }
     }
+    converter.consume_ansi_code(Ansi::Reset); // make sure all tags are closed
 
-    let result = converter.result();
-    let result = Regex::new("<span [~>]*></span>|<b></b>|<i></i>|<u></u>|<s></s>")
-        .unwrap()
-        .replace_all(&result, "");
-    let result = Regex::new("</b><b>|</i><i>|</u><u>|</s><s>")
-        .unwrap()
-        .replace_all(&result, "");
-
-    Ok(result.to_string())
+    Ok(converter.result())
 }
 
 #[derive(Debug, Default)]
@@ -152,8 +139,9 @@ impl AnsiConverter {
                 }
             }
         }
-        for style in &self.styles_to_apply {
+        for &style in &self.styles_to_apply {
             style.apply(&mut self.result);
+            self.styles.push(style);
         }
         self.styles_to_apply.clear();
     }
