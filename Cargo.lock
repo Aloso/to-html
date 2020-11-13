@@ -93,7 +93,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "faketty"
+name = "fake-tty"
 version = "0.1.0"
 
 [[package]]
@@ -254,7 +254,7 @@ dependencies = [
  "ansi-to-html",
  "clap",
  "dirs-next",
- "faketty",
+ "fake-tty",
 ]
 
 [[package]]

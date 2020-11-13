@@ -6,7 +6,7 @@
 //! ## Example
 //!
 //! ```
-//! let output = faketty::bash_command("ls --color=auto").output().unwrap();
+//! let output = fake_tty::bash_command("ls --color=auto").output().unwrap();
 //! assert!(output.status.success());
 //!
 //! let _stdout: String = String::from_utf8(output.stdout).unwrap();
@@ -45,7 +45,7 @@ pub fn bash_command(command: &str) -> process::Command {
 ///
 /// ```
 /// use std::process::{Command, Stdio};
-/// use faketty::make_script_command;
+/// use fake_tty::make_script_command;
 ///
 /// let script_command = make_script_command("ls");
 ///
@@ -63,7 +63,7 @@ pub fn bash_command(command: &str) -> process::Command {
 /// ```
 /// use std::process::{Command, Stdio};
 /// use std::io::Write;
-/// use faketty::make_script_command;
+/// use fake_tty::make_script_command;
 ///
 /// let mut script_command = make_script_command("ls");
 /// script_command.push_str("\nexit");

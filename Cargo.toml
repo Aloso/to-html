@@ -11,7 +11,7 @@ members = ["crates/*"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-faketty = { path = "./crates/faketty", version = "0.1" }
+fake-tty = { path = "./crates/fake-tty", version = "0.1" }
 ansi-to-html = { path = "./crates/ansi-to-html", version = "0.1" }
 clap = "2"
 dirs-next = "2"

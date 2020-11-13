@@ -25,7 +25,7 @@ pub fn concat(command: &[&str]) -> String {
 }
 
 pub fn run(args: &str) -> Result<(String, String, process::ExitStatus), Box<dyn error::Error>> {
-    let output = faketty::bash_command(&format!("{}; echo \"\n$PWD\"", args)).output()?;
+    let output = fake_tty::bash_command(&format!("{}; echo \"\n$PWD\"", args)).output()?;
 
     let stderr = stderr(&output)?;
     let stdout = stdout(&output)?;
