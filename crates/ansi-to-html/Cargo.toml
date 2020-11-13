@@ -1,6 +1,6 @@
 [package]
 name = "ansi-to-html"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 description = "ANSI escape codes to HTML converter"
 categories = ["command-line-interface", "encoding"]
