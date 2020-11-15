@@ -100,6 +100,10 @@ Include this on your website to get syntax highlighting for the prompt:
 
 ![screenshot](docs/to-html.png)
 
+## Alternatives
+
+In the [Gnome terminal](https://help.gnome.org/users/gnome-terminal/stable/), you can define a key binding to copy terminal content as HTML.
+
 ## Code of Conduct 🤝
 
 Please be friendly and respectful to others. This should be a place where everyone can feel safe, therefore I intend to enforce the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct).
