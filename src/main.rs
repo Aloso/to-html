@@ -6,12 +6,12 @@ pub mod cmd;
 mod lexer;
 
 fn clap_app<'a, 'b>() -> App<'a, 'b> {
-    App::new("to-html")
+    App::new(env!("CARGO_PKG_NAME"))
         .about(
             "Terminal wrapper that generates HTML from ANSI escape sequences\n\
             This requires that `bash` and `ansi-to-html` are installed.",
         )
-        .version("0.1")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Ludwig Stecher <ludwig.stecher@gmx.de>")
         .global_setting(AppSettings::ColoredHelp)
         .args(&[

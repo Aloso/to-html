@@ -31,7 +31,7 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            This is a new release of `to-html`. [Read the changelog here](https://github.com/Aloso/colo/blob/${{ steps.vars.outputs.tag }}/CHANGELOG.md).
+            This is a new release of `to-html`. [Read the changelog here](https://github.com/Aloso/to-html/blob/${{ steps.vars.outputs.tag }}/CHANGELOG.md).
 
             `to-html` is currently compatible with Linux and macOS. If you're using Windows, I recommend to use WSL.
 
@@ -57,9 +57,6 @@ jobs:
           - os: macos-latest
             platform: macos
             file_ending: ''
-          - os: windows-latest
-            platform: windows
-            file_ending: '.exe'
 
     steps:
       - name: Checkout
@@ -83,6 +80,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: colo_${{ matrix.platform }}_${{ steps.vars.outputs.tag }}${{ matrix.file_ending }}
-          asset_path: target/release/colo${{ matrix.file_ending }}
+          asset_name: to-html_${{ matrix.platform }}_${{ steps.vars.outputs.tag }}${{ matrix.file_ending }}
+          asset_path: target/release/to-html${{ matrix.file_ending }}
           asset_content_type: application/octet-stream
