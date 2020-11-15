@@ -4,6 +4,8 @@
 
 Rust library to convert a string that can contain [ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code) to HTML.
 
+## ANSI support
+
 This crate currently supports SGR parameters (text style and colors).
 The supported styles are:
 

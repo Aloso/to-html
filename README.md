@@ -33,6 +33,14 @@ Commands can contain bash syntax, including pipes and redirections:
 to-html "echo Hello world! | grep 'H' > somefile.txt"
 ```
 
+## ANSI support 🎨
+
+[List of supported features](https://github.com/Aloso/to-html/blob/master/crates/ansi-to-html/README.md#ansi-support)
+
+`to-html` only supports SGR parameters (text style and colors). However, programs that overwrite their output, like for progress bars, seem to "just work". Please correct me if I'm wrong.
+
+If you need more advanced terminal features on your website, may I suggest to use [xterm.js](https://xtermjs.org/).
+
 ## Stylesheet 💎
 
 Include this on your website to get syntax highlighting for the prompt:
@@ -94,7 +102,7 @@ Include this on your website to get syntax highlighting for the prompt:
 
 ## Code of Conduct 🤝
 
-Since this program is written in Rust, the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct) applies. Please be friendly and treat everyone with respect.
+Please be friendly and respectful to others. This should be a place where everyone can feel safe, therefore I intend to enforce the [Rust code of conduct](https://www.rust-lang.org/policies/code-of-conduct).
 
 ## Contributing 🙌
 
@@ -110,9 +118,7 @@ Also, to pass continuous integration, the code must
 
 * be properly formatted with cargo fmt
 * pass cargo clippy
-* compile on the latest stable Rust version on Ubuntu, Windows and macOS.
+* compile with the latest stable Rust version on Ubuntu and macOS.
 * all tests must pass
-
-To contribute to the website, send a PR to the gh-pages branch.
 
 That's it! If you have any questions, feel free to create an issue.
