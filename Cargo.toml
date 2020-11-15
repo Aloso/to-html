@@ -2,8 +2,16 @@
 name = "to-html"
 version = "0.1.0"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
+description = "Render a terminal with ANSI colors as HTML"
+categories = ["command-line-utilities"]
+repository = "https://github.com/Aloso/to-html"
+documentation = "https://docs.rs/to-html"
+homepage = "https://github.com/Aloso/to-html"
+readme = "README.md"
 edition = "2018"
 license = "MIT"
+keywords = ["color", "cli", "terminal", "html"]
+exclude = ["docs"]
 
 [workspace]
 members = ["crates/*"]
