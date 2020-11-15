@@ -432,7 +432,7 @@ fn parse_d_string(
         }
     }
 
-    return Ok((DString(tokens), lex));
+    Ok((DString(tokens), lex))
 }
 
 pub(crate) fn colorize(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
