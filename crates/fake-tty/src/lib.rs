@@ -141,14 +141,14 @@ mod tests {
 
     #[test]
     fn test_echo_custom() {
-        let process = process::Command::new("bash")
+        let mut process = process::Command::new("bash")
             .stdin(process::Stdio::piped())
             .stdout(process::Stdio::piped())
             .stderr(process::Stdio::piped())
             .spawn()
             .unwrap();
 
-        let mut stdin = process.stdin.as_ref().unwrap();
+        let stdin = process.stdin.as_mut().unwrap();
         stdin.write_all(br#"echo "Hello \$\`' world!""#).unwrap();
         let output = process.wait_with_output().unwrap();
 

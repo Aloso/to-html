@@ -24,10 +24,10 @@ fn cmp_paths(p1: impl AsRef<Path>, p2: impl AsRef<Path>) -> bool {
     p1.as_ref() == p2.as_ref()
 }
 
-pub fn input(child: process::Child, input: impl AsRef<str>) -> io::Result<process::Child> {
+pub fn input(mut child: process::Child, input: impl AsRef<str>) -> io::Result<process::Child> {
     child
         .stdin
-        .as_ref()
+        .as_mut()
         .unwrap()
         .write_all(input.as_ref().as_bytes())?;
     Ok(child)
