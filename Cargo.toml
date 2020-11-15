@@ -15,3 +15,8 @@ fake-tty = { path = "./crates/fake-tty", version = "0.1" }
 ansi-to-html = { path = "./crates/ansi-to-html", version = "0.1" }
 clap = "2"
 dirs-next = "2"
+logos = "0.11"
+thiserror = "1"
+
+[profile.dev.package."*"]
+opt-level = 1

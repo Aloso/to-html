@@ -3,6 +3,7 @@ use clap::{App, AppSettings, Arg, ArgMatches};
 use std::{borrow::Cow, error::Error, fmt::Write, path::PathBuf};
 
 pub mod cmd;
+mod lexer;
 
 fn clap_app<'a, 'b>() -> App<'a, 'b> {
     App::new("to-html")
@@ -17,14 +18,15 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
             Arg::with_name("command")
                 .index(1)
                 .multiple(true)
-                .help("The command(s) to execute. Multiple commands are separated with '--'")
+                .help("The command(s) to execute")
                 .required(true),
             Arg::with_name("highlight")
                 .long("highlight")
                 .short("l")
                 .help(
-                    "Arguments and subcommands that should be highlighted differently. \
-                    Multiple arguments are delimited with a comma.",
+                    "Programs that have subcommands (which should be highlighted). \
+                    Multiple arguments are separated with a comma, e.g.\n\
+                    to-html -l git,cargo,npm 'git checkout main'",
                 )
                 .multiple(true)
                 .require_delimiter(true),
@@ -38,7 +40,8 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
                 ),
             Arg::with_name("no-run")
                 .long("no-run")
-                .help("Don't run the commands, just emit the HTML for the command line"),
+                .short("n")
+                .help("Don't run the commands, just emit the HTML for the command prompt"),
             Arg::with_name("cwd")
                 .long("cwd")
                 .short("c")
@@ -99,22 +102,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     let matches = clap_app().get_matches();
     let args = parse_args(&matches)?;
 
-    let commands: Vec<&[&str]> = args.commands.split(|&s| s == "--").collect();
-
     let mut buf = String::new();
     writeln!(buf, "<pre class=\"{}terminal\">", args.prefix)?;
 
-    for command_parts in commands {
+    for &command in &args.commands {
         if args.no_run {
-            command_prompt_to_html(&mut buf, command_parts, &args)?;
+            fmt_command_prompt(&mut buf, command, &args)?;
         } else {
-            command_to_html(&mut buf, command_parts, &args)?;
+            fmt_command(&mut buf, command, &args)?;
         }
     }
 
     if !args.no_run {
         shell_prompt(&mut buf, &args)?;
-        writeln!(buf, " <span class=\"{p}caret\"> </span>", p = args.prefix)?;
+        writeln!(buf, "<span class=\"{p}caret\"> </span>", p = args.prefix)?;
     }
     write!(buf, "</pre>")?;
 
@@ -123,14 +124,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn command_to_html(
-    buf: &mut String,
-    command_parts: &[&str],
-    args: &Args,
-) -> Result<(), Box<dyn Error>> {
-    let command = cmd::concat(command_parts);
-
-    command_prompt_to_html(buf, command_parts, args)?;
+fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), Box<dyn Error>> {
+    fmt_command_prompt(buf, command, args)?;
 
     let (cmd_out, cmd_err, _) = cmd::run(&command)?;
     if !cmd_out.is_empty() {
@@ -145,73 +140,18 @@ fn command_to_html(
     Ok(())
 }
 
-fn command_prompt_to_html(
-    buf: &mut String,
-    command_parts: &[&str],
-    args: &Args,
-) -> Result<(), Box<dyn Error>> {
+fn fmt_command_prompt(buf: &mut String, command: &str, args: &Args) -> Result<(), Box<dyn Error>> {
     shell_prompt(buf, args)?;
-
-    let mut next = State::Start;
-
-    #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-    enum State {
-        Default,
-        Start,
-        Pipe,
-    }
-
-    for &part in command_parts {
-        let part_esc = Esc(part);
-        let prefix = &args.prefix;
-
-        if part.contains(|c: char| c.is_ascii_whitespace()) {
-            next = State::Default;
-            write!(
-                buf,
-                " <span class=\"{}str\">\"{}\"</span>",
-                prefix,
-                part_esc.to_string().escape_debug(),
-            )?;
-        } else if next == State::Pipe {
-            next = State::Default;
-            write!(buf, " <span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
-        } else if next == State::Start {
-            next = State::Default;
-            write!(buf, " <span class=\"{}cmd\">{}</span>", prefix, part_esc)?;
-        } else if part == "|" {
-            next = State::Start;
-            write!(buf, " <span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
-        } else if part == "<" || part == ">" {
-            next = State::Pipe;
-            write!(buf, " <span class=\"{}pipe\">{}</span>", prefix, part_esc)?;
-        } else if part == "&&" {
-            next = State::Start;
-            write!(buf, " <span class=\"{}op\">{}</span>\n ", prefix, part_esc)?;
-        } else if part.starts_with('-') {
-            if let Some((i, _)) = part.char_indices().find(|&(_, c)| c == '=') {
-                let (p1, p2) = part.split_at(i);
-                let (p1, p2) = (Esc(p1), Esc(p2));
-
-                write!(buf, " <span class=\"{}flag\">{}</span>", prefix, p1)?;
-                write!(buf, "<span class=\"{}arg\">{}</span>", prefix, p2)?;
-            } else {
-                write!(buf, " <span class=\"{}flag\">{}</span>", prefix, part_esc)?;
-            }
-        } else if args.highlight.contains(&part) {
-            write!(buf, " <span class=\"{}hl\">{}</span>", prefix, part_esc)?;
-        } else {
-            write!(buf, " <span class=\"{}arg\">{}</span>", prefix, part_esc)?;
-        }
-    }
+    lexer::colorize(buf, command, args)?;
     writeln!(buf)?;
+
     Ok(())
 }
 
 fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
     match &args.shell {
         Shell::Arrow => {
-            write!(buf, "<span class=\"{}shell\">&gt;</span>", args.prefix)?;
+            write!(buf, "<span class=\"{}shell\">&gt; </span>", args.prefix)?;
         }
         Shell::Cwd { home } => {
             let cwd = std::env::current_dir()?;
@@ -226,7 +166,7 @@ fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
 
             write!(
                 buf,
-                "<span class=\"{p}cwd\">{}</span> <span class=\"{p}shell\">$</span>",
+                "<span class=\"{p}cwd\">{} </span><span class=\"{p}shell\">$ </span>",
                 Esc(&cwd),
                 p = args.prefix
             )?;
