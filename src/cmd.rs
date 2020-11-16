@@ -3,7 +3,7 @@ use std::{error, io, io::Write, path::Path, process};
 pub fn run(args: &str) -> Result<(String, String, process::ExitStatus), Box<dyn error::Error>> {
     let output = fake_tty::bash_command(&format!("{}; echo \"\n$PWD\"", args)).output()?;
 
-    let stdout = String::from_utf8(output.stdout)?;
+    let stdout = fake_tty::get_stdout(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
     let status = output.status;
 
