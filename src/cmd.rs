@@ -3,12 +3,15 @@ use std::{error, io, io::Write, path::Path, process};
 pub fn run(args: &str) -> Result<(String, String, process::ExitStatus), Box<dyn error::Error>> {
     let output = fake_tty::bash_command(&format!("{}; echo \"\n$PWD\"", args)).output()?;
 
-    let stdout = String::from_utf8(output.stdout)?;
+    let stdout = fake_tty::get_stdout(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
     let status = output.status;
 
     let stdout = stdout.trim_end();
-    let lb = stdout.rfind(|c| matches!(c, '\n' | '\r')).unwrap();
+    let lb = stdout
+        .rfind(|c| matches!(c, '\n' | '\r'))
+        .ok_or_else(|| format!("No newline in the string {:?}", stdout))
+        .unwrap();
     let (mut output, cwd) = stdout.split_at(lb);
     let cwd = cwd.trim_start();
     if !cmp_paths(std::env::current_dir()?, cwd) {
@@ -31,4 +34,15 @@ pub fn input(mut child: process::Child, input: impl AsRef<str>) -> io::Result<pr
         .unwrap()
         .write_all(input.as_ref().as_bytes())?;
     Ok(child)
+}
+
+#[test]
+fn test_run() {
+    let (stdout, stderr, status) = run("ls -l").unwrap();
+    assert!(
+        status.success(),
+        "Running `ls -l` was unsuccessful (stdout: {:?}, stderr: {:?})",
+        stdout,
+        stderr
+    );
 }

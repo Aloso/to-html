@@ -33,16 +33,19 @@ jobs:
           body: |
             This is a new release of `to-html`. [Read the changelog here](https://github.com/Aloso/to-html/blob/${{ steps.vars.outputs.tag }}/CHANGELOG.md).
 
-            `to-html` is currently compatible with Linux and macOS. If you're using Windows, I recommend to use WSL.
+            `to-html` is currently compatible with Linux, macOS and FreeBSD. If you're using Windows, I recommend to use WSL.
 
             ### Installation
-            To install `to-html`, you can use the pre-built binaries below.
+            To install `to-html` on Linux or macOS, you can use the pre-built binaries below.
 
-            Alternatively, you can build `to-html` with Cargo, Rusts package manager. To install the Rust toolchain, see the [installation manual](https://www.rust-lang.org/tools/install). Then run
+            On FreeBSD, you need to build `to-html` with Cargo, Rusts package manager. To install the Rust toolchain, [see here](https://www.rust-lang.org/tools/install). Then run
+
             ```shell
             $ cargo install to-html
             ```
+
             You might have to add the `.cargo/bin` folder to your `PATH` afterwards.
+
             Please file issues if you run into any problems or have suggestions.
   release_assets:
     name: Release assets
