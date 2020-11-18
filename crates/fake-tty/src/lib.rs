@@ -59,7 +59,7 @@ pub fn make_script_command(c: &str) -> Command {
     #[cfg(any(target_os = "macos", target_os = "freebsd"))]
     {
         let mut command = Command::new("script");
-        command.args(&["-q", "/dev/null", "/bin/bash", "-c", c]);
+        command.args(&["-q", "/dev/null", "bash", "-c", c]);
         command
     }
 
