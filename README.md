@@ -1,6 +1,6 @@
 # to-html
 
-Terminal wrapper for rendering a terminal on a website by converting ANSI escape sequences to HTML. Depends on [bash](https://www.gnu.org/software/bash/).
+Terminal wrapper for rendering a terminal on a website by converting ANSI escape sequences to HTML. Works with many shells, including bash, fish, ksh and zsh.
 
 [![Crates.io](https://img.shields.io/crates/l/to_html)](./LICENSE) [![Crates.io](https://img.shields.io/crates/v/to-html)](https://crates.io/crates/to-html) [![Tests](https://github.com/Aloso/to-html/workflows/Test/badge.svg)](https://github.com/Aloso/to-html/actions?query=workflow%3ATest)
 
@@ -12,7 +12,7 @@ The changelog can be found [here](CHANGELOG.md).
 
 How to install colo is explained on the [releases page](https://github.com/Aloso/to-html/releases).
 
-## Examples 📚
+## Usage 📚
 
 Execute a command:
 
@@ -26,12 +26,41 @@ Execute several commands:
 to-html 'echo "Hello "' 'echo world' ls
 ```
 
-Commands can contain bash syntax, including pipes and redirections:
-
+Commands can contain shell syntax, including pipes and redirections:
 
 ```bash
 to-html "echo Hello world! | grep 'H' > somefile.txt"
 ```
+
+The default shell is bash. Use `--shell`/`-s` to use a different shell:
+
+```bash
+to-html -sfish "../" "ls"   # executed with fish
+```
+
+By default, to-html emits a `<pre>` tag. Use `--doc`/`-d` to generate a whole HTML document (including CSS):
+
+```bash
+to-html -d "ls --color" > output.html
+```
+
+By default, to-html only displays an arrow (`>`) as prompt. To display the current working directory, pass `--cwd`/`-c`:
+
+```bash
+to-html -c "cd .." "ls"
+```
+
+Example output:
+
+<pre>
+~/Develop/to-html/crates $ cd ..
+~/Develop/to-html $ ls
+Cargo.lock  CHANGELOG.md  docs     README.md  target
+Cargo.toml  crates        LICENSE  src
+~/Develop/to-html $
+</pre>
+
+(colors can't be shown on GitHub)
 
 ## ANSI support 🎨
 

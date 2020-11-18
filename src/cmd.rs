@@ -1,7 +1,14 @@
-use std::{error, io, io::Write, path::Path, process};
+use std::{
+    io::{self, Write},
+    path::Path,
+    process::{Child, ExitStatus},
+};
 
-pub fn run(args: &str) -> Result<(String, String, process::ExitStatus), Box<dyn error::Error>> {
-    let output = fake_tty::bash_command(&format!("{}; echo \"\n$PWD\"", args)).output()?;
+use crate::StdError;
+
+pub fn run(args: &str, shell: Option<&str>) -> Result<(String, String, ExitStatus), StdError> {
+    let output =
+        fake_tty::command(&format!("{}; printf \"~~////~~\"; pwd", args), shell)?.output()?;
 
     let stdout = fake_tty::get_stdout(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
@@ -9,16 +16,15 @@ pub fn run(args: &str) -> Result<(String, String, process::ExitStatus), Box<dyn 
 
     let stdout = stdout.trim_end();
     let lb = stdout
-        .rfind(|c| matches!(c, '\n' | '\r'))
-        .ok_or_else(|| format!("No newline in the string {:?}", stdout))
+        .rfind("~~////~~")
+        .ok_or_else(|| format!("Delimiter not found in the string {:?}", stdout))
         .unwrap();
-    let (mut output, cwd) = stdout.split_at(lb);
-    let cwd = cwd.trim_start();
+
+    let (output, cwd) = stdout.split_at(lb);
+    let cwd = cwd.trim_start_matches("~~////~~").trim_start();
+
     if !cmp_paths(std::env::current_dir()?, cwd) {
         std::env::set_current_dir(cwd)?;
-    }
-    if output.ends_with('\r') {
-        output = &output[..output.len() - 1];
     }
     Ok((output.to_string(), stderr, status))
 }
@@ -27,7 +33,7 @@ fn cmp_paths(p1: impl AsRef<Path>, p2: impl AsRef<Path>) -> bool {
     p1.as_ref() == p2.as_ref()
 }
 
-pub fn input(mut child: process::Child, input: impl AsRef<str>) -> io::Result<process::Child> {
+pub fn input(mut child: Child, input: impl AsRef<str>) -> io::Result<Child> {
     child
         .stdin
         .as_mut()
@@ -38,7 +44,7 @@ pub fn input(mut child: process::Child, input: impl AsRef<str>) -> io::Result<pr
 
 #[test]
 fn test_run() {
-    let (stdout, stderr, status) = run("ls -l").unwrap();
+    let (stdout, stderr, status) = run("ls -l", None).unwrap();
     assert!(
         status.success(),
         "Running `ls -l` was unsuccessful (stdout: {:?}, stderr: {:?})",
