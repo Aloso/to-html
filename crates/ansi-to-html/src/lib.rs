@@ -119,7 +119,7 @@ pub fn convert(input: &str, escaped: bool, optimized: bool) -> Result<String, Er
     Ok(html)
 }
 
-const ANSI_REGEX: &str = "\x1b\\[[0-9;?]*[A-HJKSTfhilmnsu]";
+const ANSI_REGEX: &str = "\x1b(\\[[0-9;?]*[A-HJKSTfhilmnsu]|\\(B)";
 const OPT_REGEX_1: &str = "<span [~>]*></span>|<b></b>|<i></i>|<u></u>|<s></s>";
 const OPT_REGEX_2: &str = "</b><b>|</i><i>|</u><u>|</s><s>";
 
