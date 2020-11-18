@@ -46,6 +46,10 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
                 .long("cwd")
                 .short("c")
                 .help("Print the (abbreviated) current working directory in the command prompt"),
+            Arg::with_name("doc")
+                .long("doc")
+                .short("d")
+                .help("Output a complete HTML document, not just a <pre>"),
         ])
 }
 
@@ -56,6 +60,7 @@ struct Args<'a> {
     prefix: String,
     no_run: bool,
     shell: Shell,
+    doc: bool,
 }
 
 #[derive(Debug)]
@@ -89,12 +94,15 @@ fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
         Shell::Arrow
     };
 
+    let doc = matches.is_present("doc");
+
     Ok(Args {
         commands,
         highlight,
         prefix,
         no_run,
         shell,
+        doc,
     })
 }
 
@@ -103,6 +111,38 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = parse_args(&matches)?;
 
     let mut buf = String::new();
+
+    if args.doc {
+        let lang = std::env::var("LANG")
+            .ok()
+            .and_then(|s| s.split('.').next().map(|s| s.replace('_', "-")));
+
+        if let Some(lang) = lang {
+            writeln!(buf, "<html lang=\"{}\">", Esc(lang))?;
+        } else {
+            writeln!(buf, "<html>")?;
+        }
+
+        let mut title = args
+            .commands
+            .iter()
+            .flat_map(|s| s.chars().chain(", ".chars()))
+            .collect::<String>();
+        title.truncate(title.len() - 2);
+
+        writeln!(
+            buf,
+            "<head>
+<meta charset=\"utf-8\">
+<title>{}</title>
+<style>{}</style>
+</head>
+<body>",
+            Esc(title),
+            make_style(&args.prefix),
+        )?;
+    }
+
     writeln!(buf, "<pre class=\"{}terminal\">", args.prefix)?;
 
     for &command in &args.commands {
@@ -119,6 +159,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     write!(buf, "</pre>")?;
 
+    if args.doc {
+        writeln!(buf, "</body>\n</html>")?;
+    }
+
     println!("{}", buf);
 
     Ok(())
@@ -129,6 +173,7 @@ fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), Box<d
 
     let (cmd_out, cmd_err, _) = cmd::run(&command)?;
     if !cmd_out.is_empty() {
+        dbg!(&cmd_out);
         let html = ansi_to_html::convert_escaped(&cmd_out)?;
         write!(buf, "{}", html)?;
     }
@@ -173,4 +218,53 @@ fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
         }
     }
     Ok(())
+}
+
+fn make_style(prefix: &str) -> String {
+    format!(
+        "
+body {{
+  background-color: #141414;
+  color: white;
+}}
+.{p}terminal {{
+  overflow: auto;
+  line-height: 120%;
+}}
+
+.{p}terminal .{p}shell {{
+  color: #32d132;
+  user-select: none;
+  pointer-events: none;
+}}
+.{p}terminal .{p}cmd {{
+  color: #419df3;
+}}
+.{p}terminal .{p}hl {{
+  color: #00ffff;
+  font-weight: bold;
+}}
+.{p}terminal .{p}arg {{
+  color: white;
+}}
+.{p}terminal .{p}str {{
+  color: #ffba24;
+}}
+.{p}terminal .{p}pipe, .{p}terminal .{p}punct {{
+  color: #a2be00;
+}}
+.{p}terminal .{p}flag {{
+  color: #ff7167;
+}}
+.{p}terminal .{p}esc {{
+  color: #d558f5;
+  font-weight: bold;
+}}
+.{p}terminal .{p}caret {{
+  background-color: white;
+  user-select: none;
+}}
+",
+        p = prefix,
+    )
 }
