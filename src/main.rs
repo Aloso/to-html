@@ -1,9 +1,11 @@
 use ansi_to_html::Esc;
 use clap::{App, AppSettings, Arg, ArgMatches};
-use std::{borrow::Cow, error::Error, fmt::Write, path::PathBuf};
+use std::{borrow::Cow, error, fmt::Write, path::PathBuf};
 
 pub mod cmd;
 mod lexer;
+
+pub type StdError = Box<dyn error::Error>;
 
 fn clap_app<'a, 'b>() -> App<'a, 'b> {
     App::new(env!("CARGO_PKG_NAME"))
@@ -20,6 +22,14 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
                 .multiple(true)
                 .help("The command(s) to execute")
                 .required(true),
+            Arg::with_name("shell")
+                .long("shell")
+                .short("s")
+                .takes_value(true)
+                .help(
+                    "The shell to run the command in. \
+                    On macOS and FreeBSD, the shell has to support `-c <command>`",
+                ),
             Arg::with_name("highlight")
                 .long("highlight")
                 .short("l")
@@ -56,20 +66,21 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
 #[derive(Debug)]
 struct Args<'a> {
     commands: Vec<&'a str>,
+    shell: Option<&'a str>,
     highlight: Vec<&'a str>,
     prefix: String,
     no_run: bool,
-    shell: Shell,
+    prompt: ShellPrompt,
     doc: bool,
 }
 
 #[derive(Debug)]
-enum Shell {
+enum ShellPrompt {
     Arrow,
     Cwd { home: Option<PathBuf> },
 }
 
-fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
+fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, StdError> {
     let highlight = matches
         .values_of("highlight")
         .map(Iterator::collect)
@@ -85,28 +96,41 @@ fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, Box<dyn Error>> {
         .ok_or("command missing")?
         .collect();
 
+    let shell = matches.value_of("shell");
+
     let no_run = matches.is_present("no-run");
-    let shell = if matches.is_present("cwd") {
-        Shell::Cwd {
+    let prompt = if matches.is_present("cwd") {
+        ShellPrompt::Cwd {
             home: dirs_next::home_dir(),
         }
     } else {
-        Shell::Arrow
+        ShellPrompt::Arrow
     };
 
     let doc = matches.is_present("doc");
 
     Ok(Args {
         commands,
+        shell,
         highlight,
         prefix,
         no_run,
-        shell,
+        prompt,
         doc,
     })
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
+    match main_inner() {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    }
+}
+
+fn main_inner() -> Result<(), StdError> {
     let matches = clap_app().get_matches();
     let args = parse_args(&matches)?;
 
@@ -168,12 +192,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), Box<dyn Error>> {
+fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
     fmt_command_prompt(buf, command, args)?;
 
-    let (cmd_out, cmd_err, _) = cmd::run(&command)?;
+    let (cmd_out, cmd_err, _) = cmd::run(&command, args.shell)?;
     if !cmd_out.is_empty() {
-        dbg!(&cmd_out);
         let html = ansi_to_html::convert_escaped(&cmd_out)?;
         write!(buf, "{}", html)?;
     }
@@ -185,7 +208,7 @@ fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), Box<d
     Ok(())
 }
 
-fn fmt_command_prompt(buf: &mut String, command: &str, args: &Args) -> Result<(), Box<dyn Error>> {
+fn fmt_command_prompt(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
     shell_prompt(buf, args)?;
     lexer::colorize(buf, command, args)?;
     writeln!(buf)?;
@@ -193,12 +216,12 @@ fn fmt_command_prompt(buf: &mut String, command: &str, args: &Args) -> Result<()
     Ok(())
 }
 
-fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), Box<dyn Error>> {
-    match &args.shell {
-        Shell::Arrow => {
+fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), StdError> {
+    match &args.prompt {
+        ShellPrompt::Arrow => {
             write!(buf, "<span class=\"{}shell\">&gt; </span>", args.prefix)?;
         }
-        Shell::Cwd { home } => {
+        ShellPrompt::Cwd { home } => {
             let cwd = std::env::current_dir()?;
             let cwd = cwd.to_str().ok_or("invalid UTF-8 in cwd")?;
             let cwd = match home {

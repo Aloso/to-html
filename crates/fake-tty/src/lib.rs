@@ -6,13 +6,15 @@
 //! ## Example
 //!
 //! ```
-//! let output = fake_tty::bash_command("ls").output().unwrap();
+//! let output = fake_tty::bash_command("ls").unwrap()
+//!     .output().unwrap();
 //! assert!(output.status.success());
 //!
 //! let _stdout: String = fake_tty::get_stdout(output.stdout).unwrap();
 //! ```
 
 use std::{
+    io,
     process::{Command, Stdio},
     string::FromUtf8Error,
 };
@@ -21,11 +23,22 @@ use std::{
 ///
 /// This means that the command will assume that terminal colors and
 /// other terminal features are available.
-pub fn bash_command(command: &str) -> Command {
-    let mut command = make_script_command(&command);
+pub fn bash_command(command: &str) -> io::Result<Command> {
+    let mut command = make_script_command(&command, Some("bash"))?;
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
 
-    command
+    Ok(command)
+}
+
+/// Creates a command that is executed by a shell, pretending to be a tty.
+///
+/// This means that the command will assume that terminal colors and
+/// other terminal features are available.
+pub fn command(command: &str, shell: Option<&str>) -> io::Result<Command> {
+    let mut command = make_script_command(&command, shell)?;
+    command.stdout(Stdio::piped()).stderr(Stdio::piped());
+
+    Ok(command)
 }
 
 /// Wraps the command in the `script` command that can execute it
@@ -41,26 +54,30 @@ pub fn bash_command(command: &str) -> Command {
 /// use std::process::{Command, Stdio};
 /// use fake_tty::make_script_command;
 ///
-/// let output = make_script_command("ls")
+/// let output = make_script_command("ls", Some("bash")).unwrap()
 ///     .stdout(Stdio::piped())
 ///     .stderr(Stdio::piped())
 ///     .output().unwrap();
 ///
 /// assert!(output.status.success());
 /// ```
-pub fn make_script_command(c: &str) -> Command {
+pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> {
+    let shell = which_shell(shell.unwrap_or("bash"))?;
+
     #[cfg(target_os = "linux")]
     {
         let mut command = Command::new("script");
         command.args(&["-qec", c, "/dev/null"]);
-        command
+        command.env("SHELL", shell.trim());
+
+        Ok(command)
     }
 
     #[cfg(any(target_os = "macos", target_os = "freebsd"))]
     {
         let mut command = Command::new("script");
-        command.args(&["-q", "/dev/null", "bash", "-c", c]);
-        command
+        command.args(&["-q", "/dev/null", shell.trim(), "-c", c]);
+        Ok(command)
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "freebsd")))]
@@ -86,11 +103,36 @@ pub fn get_stdout(stdout: Vec<u8>) -> Result<String, FromUtf8Error> {
     }
 }
 
+fn which_shell(shell: &str) -> io::Result<String> {
+    let which = Command::new("which")
+        .arg(shell)
+        .stdout(Stdio::piped())
+        .output()?;
+
+    if which.status.success() {
+        Ok(String::from_utf8(which.stdout).unwrap())
+    } else {
+        Err(io::Error::new(
+            io::ErrorKind::Other,
+            String::from_utf8(which.stderr).unwrap(),
+        ))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     fn run(s: &str) -> String {
-        let output = crate::bash_command(s).output().unwrap();
-        crate::get_stdout(output.stdout).unwrap()
+        let output = crate::bash_command(s).unwrap().output().unwrap();
+        let s1 = crate::get_stdout(output.stdout).unwrap();
+
+        if crate::which_shell("zsh").is_ok() {
+            let output = crate::command(s, Some("zsh")).unwrap().output().unwrap();
+            let s2 = crate::get_stdout(output.stdout).unwrap();
+
+            assert_eq!(s1, s2);
+        }
+
+        s1
     }
 
     #[test]
