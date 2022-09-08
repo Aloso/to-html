@@ -112,7 +112,7 @@ pub fn convert(input: &str, escaped: bool, optimized: bool) -> Result<String, Er
         let input = Esc(input).to_string();
         html::ansi_to_html(&input, &ansi_regex())?
     } else {
-        html::ansi_to_html(&input, &ansi_regex())?
+        html::ansi_to_html(input, &ansi_regex())?
     };
 
     let html = if optimized { optimize(&html) } else { html };
@@ -136,7 +136,7 @@ fn ansi_regex() -> &'static Regex {
 
 #[cfg(not(feature = "once_cell"))]
 fn optimize(html: &str) -> String {
-    let html = Regex::new(OPT_REGEX_1).unwrap().replace_all(&html, "");
+    let html = Regex::new(OPT_REGEX_1).unwrap().replace_all(html, "");
     let html = Regex::new(OPT_REGEX_2).unwrap().replace_all(&html, "");
 
     html.to_string()
@@ -152,7 +152,7 @@ fn optimize(html: &str) -> String {
     });
     let (regex1, regex2) = &*REGEXES;
 
-    let html = regex1.replace_all(&html, "");
+    let html = regex1.replace_all(html, "");
     let html = regex2.replace_all(&html, "");
 
     html.to_string()

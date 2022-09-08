@@ -255,10 +255,10 @@ impl Tokens<'_> {
                 matches!(
                     t,
                     Token::Word(_)
-                    | Token::SString(_)
-                    | Token::Variable(_)
-                    | Token::EscapeSequence(_)
-                    | Token::DString(_)
+                        | Token::SString(_)
+                        | Token::Variable(_)
+                        | Token::EscapeSequence(_)
+                        | Token::DString(_)
                 )
             })
             .map(|t| {
@@ -268,7 +268,7 @@ impl Tokens<'_> {
                     &Token::Variable(s) => Cow::Borrowed(s),
                     &Token::EscapeSequence(s) => Cow::Borrowed(&s[1..]),
                     Token::DString(d) => Cow::Owned(d.to_string_heredoc()?),
-                    _ => unreachable!(),
+                    _ => unreachable!("Invalid token"),
                 })
             })
             .collect()

@@ -195,7 +195,7 @@ fn main_inner() -> Result<(), StdError> {
 fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
     fmt_command_prompt(buf, command, args)?;
 
-    let (cmd_out, cmd_err, _) = cmd::run(&command, args.shell)?;
+    let (cmd_out, cmd_err, _) = cmd::run(command, args.shell)?;
     if !cmd_out.is_empty() {
         let html = ansi_to_html::convert_escaped(&cmd_out)?;
         write!(buf, "{}", html)?;

@@ -24,7 +24,7 @@ use std::{
 /// This means that the command will assume that terminal colors and
 /// other terminal features are available.
 pub fn bash_command(command: &str) -> io::Result<Command> {
-    let mut command = make_script_command(&command, Some("bash"))?;
+    let mut command = make_script_command(command, Some("bash"))?;
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
 
     Ok(command)
@@ -35,7 +35,7 @@ pub fn bash_command(command: &str) -> io::Result<Command> {
 /// This means that the command will assume that terminal colors and
 /// other terminal features are available.
 pub fn command(command: &str, shell: Option<&str>) -> io::Result<Command> {
-    let mut command = make_script_command(&command, shell)?;
+    let mut command = make_script_command(command, shell)?;
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
 
     Ok(command)
@@ -64,7 +64,7 @@ pub fn command(command: &str, shell: Option<&str>) -> io::Result<Command> {
 pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> {
     let shell = which_shell(shell.unwrap_or("bash"))?;
 
-    #[cfg(any(target_os = "linux", target_os="android"))]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     {
         let mut command = Command::new("script");
         command.args(&["-qec", c, "/dev/null"]);
@@ -80,7 +80,12 @@ pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> 
         Ok(command)
     }
 
-    #[cfg(not(any(target_os = "android", target_os = "linux", target_os = "macos", target_os = "freebsd")))]
+    #[cfg(not(any(
+        target_os = "android",
+        target_os = "linux",
+        target_os = "macos",
+        target_os = "freebsd"
+    )))]
     compile_error!("This platform is not supported. See https://github.com/Aloso/to-html/issues/3")
 }
 
@@ -88,7 +93,7 @@ pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> 
 pub fn get_stdout(stdout: Vec<u8>) -> Result<String, FromUtf8Error> {
     let out = String::from_utf8(stdout)?;
 
-    #[cfg(any(target_os = "linux", target_os="android"))]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     {
         Ok(out.replace("\r\n", "\n"))
     }
