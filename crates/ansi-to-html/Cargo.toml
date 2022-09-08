@@ -8,16 +8,16 @@ repository = "https://github.com/Aloso/to-html"
 documentation = "https://docs.rs/ansi-to-html"
 homepage = "https://github.com/Aloso/to-html/tree/master/crates/ansi-to-html"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 license = "MIT"
 keywords = ["color", "cli", "terminal", "html"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-regex = "1"
-thiserror = "1"
-once_cell = { version = "1.5", optional = true }
+regex = "1.6.0"
+thiserror = "1.0.34"
+once_cell = { version = "1.14.0", optional = true }
 
 [features]
 default = []

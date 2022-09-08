@@ -8,7 +8,7 @@ repository = "https://github.com/Aloso/to-html"
 documentation = "https://docs.rs/fake-tty"
 homepage = "https://github.com/Aloso/to-html/tree/master/crates/fake-tty"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 keywords = ["cli", "terminal"]
 license = "MIT"
 

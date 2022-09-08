@@ -1,5 +1,5 @@
 use ansi_to_html::Esc;
-use clap::{App, AppSettings, Arg, ArgMatches};
+use clap::{App, AppSettings, Arg, ArgMatches, Command};
 use std::{borrow::Cow, error, fmt::Write, path::PathBuf};
 
 pub mod cmd;
@@ -7,7 +7,7 @@ mod lexer;
 
 pub type StdError = Box<dyn error::Error>;
 
-fn clap_app<'a, 'b>() -> App<'a, 'b> {
+fn clap_app<'a>() -> Command<'a> {
     App::new(env!("CARGO_PKG_NAME"))
         .about(
             "Terminal wrapper that generates HTML from ANSI escape sequences\n\
@@ -24,7 +24,7 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
                 .required(true),
             Arg::with_name("shell")
                 .long("shell")
-                .short("s")
+                .short('s')
                 .takes_value(true)
                 .help(
                     "The shell to run the command in. \
@@ -32,17 +32,18 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
                 ),
             Arg::with_name("highlight")
                 .long("highlight")
-                .short("l")
+                .short('l')
                 .help(
                     "Programs that have subcommands (which should be highlighted). \
                     Multiple arguments are separated with a comma, e.g.\n\
                     to-html -l git,cargo,npm 'git checkout main'",
                 )
                 .multiple(true)
+                .use_value_delimiter(true)
                 .require_delimiter(true),
             Arg::with_name("prefix")
                 .long("prefix")
-                .short("p")
+                .short('p')
                 .takes_value(true)
                 .help(
                     "Prefix for CSS classes. For example, with the 'to-html' prefix, \
@@ -50,15 +51,15 @@ fn clap_app<'a, 'b>() -> App<'a, 'b> {
                 ),
             Arg::with_name("no-run")
                 .long("no-run")
-                .short("n")
+                .short('n')
                 .help("Don't run the commands, just emit the HTML for the command prompt"),
             Arg::with_name("cwd")
                 .long("cwd")
-                .short("c")
+                .short('c')
                 .help("Print the (abbreviated) current working directory in the command prompt"),
             Arg::with_name("doc")
                 .long("doc")
-                .short("d")
+                .short('d')
                 .help("Output a complete HTML document, not just a <pre>"),
         ])
 }
@@ -80,7 +81,7 @@ enum ShellPrompt {
     Cwd { home: Option<PathBuf> },
 }
 
-fn parse_args<'a>(matches: &'a ArgMatches) -> Result<Args<'a>, StdError> {
+fn parse_args(matches: &ArgMatches) -> Result<Args<'_>, StdError> {
     let highlight = matches
         .values_of("highlight")
         .map(Iterator::collect)
@@ -179,7 +180,7 @@ fn main_inner() -> Result<(), StdError> {
 
     if !args.no_run {
         shell_prompt(&mut buf, &args)?;
-        writeln!(buf, "<span class=\"{p}caret\"> </span>", p = args.prefix)?;
+        writeln!(buf, "<span class='{p}caret'> </span>", p = args.prefix)?;
     }
     write!(buf, "</pre>")?;
 
@@ -219,7 +220,7 @@ fn fmt_command_prompt(buf: &mut String, command: &str, args: &Args) -> Result<()
 fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), StdError> {
     match &args.prompt {
         ShellPrompt::Arrow => {
-            write!(buf, "<span class=\"{}shell\">&gt; </span>", args.prefix)?;
+            write!(buf, "<span class='{}shell'>&gt; </span>", args.prefix)?;
         }
         ShellPrompt::Cwd { home } => {
             let cwd = std::env::current_dir()?;
@@ -234,7 +235,7 @@ fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), StdError> {
 
             write!(
                 buf,
-                "<span class=\"{p}cwd\">{} </span><span class=\"{p}shell\">$ </span>",
+                "<span class='{p}cwd'>{} </span><span class='{p}shell'>$ </span>",
                 Esc(&cwd),
                 p = args.prefix
             )?;

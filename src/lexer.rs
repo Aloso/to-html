@@ -496,10 +496,10 @@ impl Tokens<'_> {
                 &Token::Word(w) => {
                     if next == State::Start {
                         if w.contains('=') {
-                            write!(buf, "<span class=\"{}env\">{}</span>", prefix, Esc(w))?;
+                            write!(buf, "<span class='{}env'>{}</span>", prefix, Esc(w))?;
                         } else {
                             next = State::Default;
-                            write!(buf, "<span class=\"{}cmd\">{}</span>", prefix, Esc(w))?;
+                            write!(buf, "<span class='{}cmd'>{}</span>", prefix, Esc(w))?;
                             if args.highlight.contains(&w) {
                                 hl_subcommand = true;
                                 continue;
@@ -511,15 +511,15 @@ impl Tokens<'_> {
                         if let Some((i, _)) = w.char_indices().find(|&(_, c)| c == '=') {
                             let (p1, p2) = w.split_at(i);
 
-                            write!(buf, "<span class=\"{}flag\">{}</span>", prefix, Esc(p1))?;
-                            write!(buf, "<span class=\"{}arg\">{}</span>", prefix, Esc(p2))?;
+                            write!(buf, "<span class='{}flag'>{}</span>", prefix, Esc(p1))?;
+                            write!(buf, "<span class='{}arg'>{}</span>", prefix, Esc(p2))?;
                         } else {
-                            write!(buf, "<span class=\"{}flag\">{}</span>", prefix, Esc(w))?;
+                            write!(buf, "<span class='{}flag'>{}</span>", prefix, Esc(w))?;
                         }
                     } else if hl_subcommand {
-                        write!(buf, "<span class=\"{}hl\">{}</span>", prefix, Esc(w))?;
+                        write!(buf, "<span class='{}hl'>{}</span>", prefix, Esc(w))?;
                     } else {
-                        write!(buf, "<span class=\"{}arg\">{}</span>", prefix, Esc(w))?;
+                        write!(buf, "<span class='{}arg'>{}</span>", prefix, Esc(w))?;
                     }
                 }
                 Token::DString(d) => {
