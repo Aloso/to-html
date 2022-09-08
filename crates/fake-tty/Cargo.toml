@@ -1,6 +1,6 @@
 [package]
 name = "fake-tty"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 description = "Run command with bash pretending to be a tty"
 categories = []

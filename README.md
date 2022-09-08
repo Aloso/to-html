@@ -10,7 +10,7 @@ The changelog can be found [here](CHANGELOG.md).
 
 ## Installation 🚀
 
-How to install colo is explained on the [releases page](https://github.com/Aloso/to-html/releases).
+How to install to-html is explained on the [releases page](https://github.com/Aloso/to-html/releases).
 
 ## Usage 📚
 
@@ -103,7 +103,8 @@ Include this on your website to get syntax highlighting for the prompt:
 .terminal .str {
   color: #ffba24;
 }
-.terminal .pipe, .terminal .punct {
+.terminal .pipe,
+.terminal .punct {
   color: #a2be00;
 }
 .terminal .flag {
@@ -143,15 +144,15 @@ I appreciate your help! The easiest way to help is to file bug reports or sugges
 
 If you want to create a pull request, make sure the following requirements are met:
 
-* The code is documented
-* If you add a dependency that includes unsafe code, please explain why it is required
-* Please try to keep compile times small, if feasible
+- The code is documented
+- If you add a dependency that includes unsafe code, please explain why it is required
+- Please try to keep compile times small, if feasible
 
 Also, to pass continuous integration, the code must
 
-* be properly formatted with cargo fmt
-* pass cargo clippy
-* compile with the latest stable Rust version on Ubuntu and macOS.
-* all tests must pass
+- be properly formatted with cargo fmt
+- pass cargo clippy
+- compile with the latest stable Rust version on Ubuntu and macOS.
+- all tests must pass
 
 That's it! If you have any questions, feel free to create an issue.
