@@ -11,32 +11,44 @@ pub(crate) enum Color {
 }
 
 impl Color {
-    pub(crate) fn parse_4bit(code: u8) -> Self {
-        Color::FourBit(match code {
-            0 => FourBitColor::Black,
-            1 => FourBitColor::Red,
-            2 => FourBitColor::Green,
-            3 => FourBitColor::Yellow,
-            4 => FourBitColor::Blue,
-            5 => FourBitColor::Magenta,
-            6 => FourBitColor::Cyan,
-            7 => FourBitColor::White,
-            _ => unreachable!("4 bit colors only"),
-        })
+    pub(crate) fn parse_4bit(code: u8) -> Result<Self, Error> {
+        if (0..=7).contains(&code) {
+            Ok(Color::FourBit(match code {
+                0 => FourBitColor::Black,
+                1 => FourBitColor::Red,
+                2 => FourBitColor::Green,
+                3 => FourBitColor::Yellow,
+                4 => FourBitColor::Blue,
+                5 => FourBitColor::Magenta,
+                6 => FourBitColor::Cyan,
+                7 => FourBitColor::White,
+                _ => unreachable!("4 bit colors only"),
+            }))
+        } else {
+            Err(Error::InvalidAnsi {
+                msg: format!("4 bit colors only, got {}", code),
+            })
+        }
     }
 
-    pub(crate) fn parse_4bit_bright(code: u8) -> Self {
-        Color::FourBit(match code {
-            0 => FourBitColor::BrightBlack,
-            1 => FourBitColor::BrightRed,
-            2 => FourBitColor::BrightGreen,
-            3 => FourBitColor::BrightYellow,
-            4 => FourBitColor::BrightBlue,
-            5 => FourBitColor::BrightMagenta,
-            6 => FourBitColor::BrightCyan,
-            7 => FourBitColor::BrightWhite,
-            _ => unreachable!("4 bit colors only"),
-        })
+    pub(crate) fn parse_4bit_bright(code: u8) -> Result<Self, Error> {
+        if (0..=7).contains(&code) {
+            Ok(Color::FourBit(match code {
+                0 => FourBitColor::BrightBlack,
+                1 => FourBitColor::BrightRed,
+                2 => FourBitColor::BrightGreen,
+                3 => FourBitColor::BrightYellow,
+                4 => FourBitColor::BrightBlue,
+                5 => FourBitColor::BrightMagenta,
+                6 => FourBitColor::BrightCyan,
+                7 => FourBitColor::BrightWhite,
+                _ => unreachable!("4 bit colors only"),
+            }))
+        } else {
+            Err(Error::InvalidAnsi {
+                msg: format!("4 bit colors only, got {}", code),
+            })
+        }
     }
 
     pub(crate) fn parse_better<I>(mut iter: I) -> Result<Self, Error>
