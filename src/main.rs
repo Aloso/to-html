@@ -1,5 +1,5 @@
 use ansi_to_html::Esc;
-use clap::{App, AppSettings, Arg, ArgMatches, Command};
+use clap::{App, Arg, ArgMatches, Command};
 use std::{borrow::Cow, error, fmt::Write, path::PathBuf};
 
 pub mod cmd;
@@ -9,13 +9,9 @@ pub type StdError = Box<dyn error::Error>;
 
 fn clap_app<'a>() -> Command<'a> {
     App::new(env!("CARGO_PKG_NAME"))
-        .about(
-            "Terminal wrapper that generates HTML from ANSI escape sequences\n\
-            This requires that `bash` and `ansi-to-html` are installed.",
-        )
+        .about("Shell wrapper that generates HTML from ANSI escape sequences")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Ludwig Stecher <ludwig.stecher@gmx.de>")
-        .global_setting(AppSettings::ColoredHelp)
         .args(&[
             Arg::with_name("command")
                 .index(1)
