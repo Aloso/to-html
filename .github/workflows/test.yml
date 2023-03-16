@@ -2,55 +2,57 @@ name: Test
 
 on:
   push:
-    branches: [main]
   pull_request:
-    branches: [main]
+  schedule:
+    # Run monthly to keep Rust toolchain changes fresh
+    - cron: '0 0 1 * *'
 
 jobs:
   rustfmt:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        channel: [stable, beta]
     steps:
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-          override: true
+          toolchain: ${{ matrix.channel }}
           components: rustfmt
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Run `cargo fmt`
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: |
+          cargo fmt --all -- --check
 
   clippy:
     needs: rustfmt
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        channel: [stable, beta]
     steps:
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-          override: true
+          toolchain: ${{ matrix.channel }}
           components: clippy
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Run `cargo clippy`
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cargo clippy
 
   build:
     needs: clippy
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        channel: [stable, beta]
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-          override: true
+          toolchain: ${{ matrix.channel }}
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build and run tests
         run: |
           cargo test --verbose --workspace
