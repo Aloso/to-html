@@ -3,6 +3,9 @@ name: Test
 on:
   push:
   pull_request:
+  schedule:
+    # Run monthly to keep Rust toolchain changes fresh
+    - cron: '0 0 1 * *'
 
 jobs:
   rustfmt:
