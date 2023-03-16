@@ -67,7 +67,7 @@ pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> 
     #[cfg(any(target_os = "linux", target_os = "android"))]
     {
         let mut command = Command::new("script");
-        command.args(&["-qec", c, "/dev/null"]);
+        command.args(["-qec", c, "/dev/null"]);
         command.env("SHELL", shell.trim());
 
         Ok(command)
