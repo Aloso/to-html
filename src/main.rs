@@ -8,7 +8,7 @@ mod lexer;
 pub type StdError = Box<dyn error::Error>;
 
 #[derive(Parser)]
-#[command(author, version, about)]
+#[command(author, version, about, max_term_width = 100)]
 struct Cli {
     /// The command(s) to execute
     #[arg(required = true)]
