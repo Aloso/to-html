@@ -8,32 +8,31 @@ mod lexer;
 pub type StdError = Box<dyn error::Error>;
 
 #[derive(Parser)]
-#[clap(author, version, about)]
+#[command(author, version, about)]
 struct Cli {
     /// The command(s) to execute
-    #[clap(required = true)]
+    #[arg(required = true)]
     command: Vec<String>,
     /// The shell to run the command in. On macOS and FreeBSD, the shell has to support
     /// `-c <command>`
-    #[clap(short, long)]
+    #[arg(short, long)]
     shell: Option<String>,
     /// Programs that have subcommands (which should be highlighted). Multiple arguments are
-    /// separated with a comma, e.g.
-    /// to-html -l git,cargo,npm 'git checkout main'
-    #[clap(short = 'l', long, require_value_delimiter = true)]
+    /// separated with a comma, e.g. to-html -l git,cargo,npm 'git checkout main'
+    #[arg(short = 'l', long, value_delimiter = ',')]
     highlight: Vec<String>,
     /// Prefix for CSS classes. For example, with the 'to-html' prefix, the 'arg' class becomes
     /// 'to-html-arg'",
-    #[clap(short, long)]
+    #[arg(short, long)]
     prefix: Option<String>,
     /// Don't run the commands, just emit the HTML for the command prompt
-    #[clap(short, long)]
+    #[arg(short, long)]
     no_run: bool,
     /// Print the (abbreviated) current working directory in the command prompt
-    #[clap(short, long)]
+    #[arg(short, long)]
     cwd: bool,
     /// Output a complete HTML document, not just a <pre>
-    #[clap(short, long)]
+    #[arg(short, long)]
     doc: bool,
 }
 

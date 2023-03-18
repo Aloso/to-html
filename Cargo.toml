@@ -21,7 +21,7 @@ members = ["crates/*"]
 [dependencies]
 fake-tty = { path = "./crates/fake-tty", version = "0.3.1" }
 ansi-to-html = { path = "./crates/ansi-to-html", version = "0.1.2" }
-clap = { version = "3.2.20", features = ["derive"] }
+clap = { version = "4.1.10", features = ["derive"] }
 dirs-next = "2.0.0"
 logos = "0.12.1"
 thiserror = "1.0.33"
