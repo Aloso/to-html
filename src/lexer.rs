@@ -500,7 +500,7 @@ impl Tokens<'_> {
                         } else {
                             next = State::Default;
                             write!(buf, "<span class='{}cmd'>{}</span>", prefix, Esc(w))?;
-                            if args.highlight.contains(&w) {
+                            if args.highlight.iter().any(|h| h == w) {
                                 hl_subcommand = true;
                                 continue;
                             }

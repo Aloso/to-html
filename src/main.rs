@@ -1,5 +1,5 @@
 use ansi_to_html::Esc;
-use clap::{App, Arg, ArgMatches, Command};
+use clap::Parser;
 use std::{borrow::Cow, error, fmt::Write, path::PathBuf};
 
 pub mod cmd;
@@ -7,68 +7,78 @@ mod lexer;
 
 pub type StdError = Box<dyn error::Error>;
 
-fn clap_app<'a>() -> Command<'a> {
-    App::new(env!("CARGO_PKG_NAME"))
-        .about("Shell wrapper that generates HTML from ANSI escape sequences")
-        .version(env!("CARGO_PKG_VERSION"))
-        .author("Ludwig Stecher <ludwig.stecher@gmx.de>")
-        .args(&[
-            Arg::with_name("command")
-                .index(1)
-                .multiple(true)
-                .help("The command(s) to execute")
-                .required(true),
-            Arg::with_name("shell")
-                .long("shell")
-                .short('s')
-                .takes_value(true)
-                .help(
-                    "The shell to run the command in. \
-                    On macOS and FreeBSD, the shell has to support `-c <command>`",
-                ),
-            Arg::with_name("highlight")
-                .long("highlight")
-                .short('l')
-                .help(
-                    "Programs that have subcommands (which should be highlighted). \
-                    Multiple arguments are separated with a comma, e.g.\n\
-                    to-html -l git,cargo,npm 'git checkout main'",
-                )
-                .multiple(true)
-                .use_value_delimiter(true)
-                .require_delimiter(true),
-            Arg::with_name("prefix")
-                .long("prefix")
-                .short('p')
-                .takes_value(true)
-                .help(
-                    "Prefix for CSS classes. For example, with the 'to-html' prefix, \
-                    the 'arg' class becomes 'to-html-arg'",
-                ),
-            Arg::with_name("no-run")
-                .long("no-run")
-                .short('n')
-                .help("Don't run the commands, just emit the HTML for the command prompt"),
-            Arg::with_name("cwd")
-                .long("cwd")
-                .short('c')
-                .help("Print the (abbreviated) current working directory in the command prompt"),
-            Arg::with_name("doc")
-                .long("doc")
-                .short('d')
-                .help("Output a complete HTML document, not just a <pre>"),
-        ])
+#[derive(Parser)]
+#[clap(author, version, about)]
+struct Cli {
+    /// The command(s) to execute
+    #[clap(required = true)]
+    command: Vec<String>,
+    /// The shell to run the command in. On macOS and FreeBSD, the shell has to support
+    /// `-c <command>`
+    #[clap(short, long)]
+    shell: Option<String>,
+    /// Programs that have subcommands (which should be highlighted). Multiple arguments are
+    /// separated with a comma, e.g.
+    /// to-html -l git,cargo,npm 'git checkout main'
+    #[clap(short = 'l', long, require_value_delimiter = true)]
+    highlight: Vec<String>,
+    /// Prefix for CSS classes. For example, with the 'to-html' prefix, the 'arg' class becomes
+    /// 'to-html-arg'",
+    #[clap(short, long)]
+    prefix: Option<String>,
+    /// Don't run the commands, just emit the HTML for the command prompt
+    #[clap(short, long)]
+    no_run: bool,
+    /// Print the (abbreviated) current working directory in the command prompt
+    #[clap(short, long)]
+    cwd: bool,
+    /// Output a complete HTML document, not just a <pre>
+    #[clap(short, long)]
+    doc: bool,
 }
 
 #[derive(Debug)]
-struct Args<'a> {
-    commands: Vec<&'a str>,
-    shell: Option<&'a str>,
-    highlight: Vec<&'a str>,
+struct Args {
+    commands: Vec<String>,
+    shell: Option<String>,
+    highlight: Vec<String>,
     prefix: String,
     no_run: bool,
     prompt: ShellPrompt,
     doc: bool,
+}
+
+impl From<Cli> for Args {
+    fn from(cli: Cli) -> Self {
+        let Cli {
+            shell,
+            highlight,
+            prefix,
+            no_run,
+            cwd,
+            doc,
+            command: commands,
+        } = cli;
+
+        let prefix = prefix.map(|s| format!("{}-", Esc(s))).unwrap_or_default();
+        let prompt = if cwd {
+            ShellPrompt::Cwd {
+                home: dirs_next::home_dir(),
+            }
+        } else {
+            ShellPrompt::Arrow
+        };
+
+        Self {
+            commands,
+            shell,
+            highlight,
+            prefix,
+            no_run,
+            prompt,
+            doc,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -77,44 +87,9 @@ enum ShellPrompt {
     Cwd { home: Option<PathBuf> },
 }
 
-fn parse_args(matches: &ArgMatches) -> Result<Args<'_>, StdError> {
-    let highlight = matches
-        .values_of("highlight")
-        .map(Iterator::collect)
-        .unwrap_or_default();
-
-    let prefix = matches
-        .value_of("prefix")
-        .map(|s| format!("{}-", Esc(s)))
-        .unwrap_or_default();
-
-    let commands = matches
-        .values_of("command")
-        .ok_or("command missing")?
-        .collect();
-
-    let shell = matches.value_of("shell");
-
-    let no_run = matches.is_present("no-run");
-    let prompt = if matches.is_present("cwd") {
-        ShellPrompt::Cwd {
-            home: dirs_next::home_dir(),
-        }
-    } else {
-        ShellPrompt::Arrow
-    };
-
-    let doc = matches.is_present("doc");
-
-    Ok(Args {
-        commands,
-        shell,
-        highlight,
-        prefix,
-        no_run,
-        prompt,
-        doc,
-    })
+fn parse_args() -> Args {
+    let cli = Cli::parse();
+    Args::from(cli)
 }
 
 fn main() {
@@ -128,8 +103,7 @@ fn main() {
 }
 
 fn main_inner() -> Result<(), StdError> {
-    let matches = clap_app().get_matches();
-    let args = parse_args(&matches)?;
+    let args = parse_args();
 
     let mut buf = String::new();
 
@@ -166,7 +140,7 @@ fn main_inner() -> Result<(), StdError> {
 
     writeln!(buf, "<pre class=\"{}terminal\">", args.prefix)?;
 
-    for &command in &args.commands {
+    for command in &args.commands {
         if args.no_run {
             fmt_command_prompt(&mut buf, command, &args)?;
         } else {
@@ -192,7 +166,7 @@ fn main_inner() -> Result<(), StdError> {
 fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
     fmt_command_prompt(buf, command, args)?;
 
-    let (cmd_out, cmd_err, _) = cmd::run(command, args.shell)?;
+    let (cmd_out, cmd_err, _) = cmd::run(command, args.shell.as_deref())?;
     if !cmd_out.is_empty() {
         let html = ansi_to_html::convert_escaped(&cmd_out)?;
         write!(buf, "{}", html)?;
