@@ -1,5 +1,3 @@
-use std::mem;
-
 use crate::{html::AnsiConverter, Ansi, Color};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -43,28 +41,14 @@ impl CurrentStyling {
 /// converting to HTML
 #[derive(Debug)]
 pub(crate) struct Minifier {
-    top: Top,
     storage: Vec<(String, Vec<Ansi>)>,
 }
 
 impl Default for Minifier {
     fn default() -> Self {
         Self {
-            top: Top::default(),
             storage: vec![(String::new(), Vec::new())],
         }
-    }
-}
-
-#[derive(Debug)]
-enum Top {
-    Text(String),
-    Codes(Vec<Ansi>),
-}
-
-impl Default for Top {
-    fn default() -> Self {
-        Self::Text(String::new())
     }
 }
 
@@ -74,57 +58,24 @@ impl Minifier {
     }
 
     pub fn push_ansi_code(&mut self, ansi: Ansi) {
-        let prev_top = mem::take(&mut self.top);
-        self.top = match prev_top {
-            Top::Codes(mut codes) => {
-                codes.push(ansi);
-                Top::Codes(codes)
-            }
-            Top::Text(text) => {
-                if !text.is_empty() {
-                    self.storage.push((text, Vec::new()));
-                }
-                Top::Codes(vec![ansi])
-            }
-        };
+        self.storage
+            .last_mut()
+            .expect("Starts with an entry")
+            .1
+            .push(ansi);
     }
 
     pub fn push_str(&mut self, s: &str) {
-        let prev_top = mem::take(&mut self.top);
-        self.top = match prev_top {
-            Top::Codes(codes) => {
-                let last = self.storage.last_mut().expect("Starts with an entry");
-                last.1.extend_from_slice(&codes);
-                Top::Text(s.to_owned())
-            }
-            Top::Text(mut text) => {
-                text.push_str(s);
-                Top::Text(text)
-            }
-        };
+        let top = self.storage.last_mut().expect("Starts with an entry");
+        if top.1.is_empty() {
+            top.0.push_str(s);
+        } else {
+            self.storage.push((s.to_owned(), Vec::new()));
+        }
     }
 
     pub fn into_html(self) -> String {
-        let Self { top, mut storage } = self;
-
-        // Consume lingering `top` to finish off `storage`
-        match top {
-            Top::Codes(codes) => storage
-                .last_mut()
-                .expect("Starts with an entry")
-                .1
-                .extend_from_slice(&codes),
-            Top::Text(text) => {
-                if !text.is_empty() {
-                    let (last_text, last_codes) = storage.last_mut().expect("Starts with an entry");
-                    if last_codes.is_empty() {
-                        last_text.push_str(&text);
-                    } else {
-                        storage.push((text, Vec::new()));
-                    }
-                }
-            }
-        }
+        let Self { storage } = self;
 
         // Iterate over each pair ignoring ansi codes that repeat the previously used style before
         // text is used. E.g.
