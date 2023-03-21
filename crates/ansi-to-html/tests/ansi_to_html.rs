@@ -48,29 +48,32 @@ fn human_readable_to_ansi(s: &str) -> String {
 // discarded while minifying. Issue: https://github.com/Aloso/to-html/issues/17
 #[test]
 fn ariadne() {
-    let readable = "\
+    let readable = r#"
 {{ red }}Error:{{ res }} Incompatible types
    {{ 8_246 }},{{ res }}{{ 8_246 }}-{{ res }}{{ 8_246 }}[{{ res }}<unknown>:2:9{{ 8_246 }}]{{ res }}
    {{ 8_246 }}|{{ res }}
- {{ 8_246 }}2 |{{ res }} {{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}\
- {{ 8_249 }} {{ res }}{{ 8_249 }}({{ res }}{{ 8_249 }}){{ res }}{{ 8_249 }} {{ res }}\
- {{ 8_249 }}={{ res }}{{ 8_249 }}>{{ res }}{{ 8_249 }} {{ res }}{{ cyan }}5{{ res }}\
- {{ 8_249 }},{{ res }}
+ {{ 8_246 }}2 |{{ res }} {{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }}({{ res }}{{ 8_249 }}){{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }}={{ res }}{{ 8_249 }}>{{ res }}{{ 8_249 }} {{ res }}{{ cyan }}5{{ res }}{{ 8_249 }},{{ res }}
  {{ 8_240 }}  |{{ res }}           {{ cyan }}|{{ res }}
- {{ 8_240 }}  |{{ res }}           {{ cyan }}`{{ res }}{{ cyan }}-{{ res }}{{ cyan }}-{{ res }} \
- This is of type Nat
- {{ 8_246 }}3 |{{ res }} {{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}\
- {{ 8_249 }} {{ res }}{{ 8_249 }}({{ res }}{{ 8_249 }}){{ res }}{{ 8_249 }} {{ res }}\
- {{ 8_249 }}={{ res }}{{ 8_249 }}>{{ res }}{{ 8_249 }} {{ res }}{{ blue }}\"{{ res }}\
- {{ blue }}5{{ res }}{{ blue }}\"{{ res }}{{ 8_249 }},{{ res }}
+ {{ 8_240 }}  |{{ res }}           {{ cyan }}`{{ res }}{{ cyan }}-{{ res }}{{ cyan }}-{{ res }} This is of type Nat
+ {{ 8_246 }}3 |{{ res }} {{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }}({{ res }}{{ 8_249 }}){{ res }}{{ 8_249 }} {{ res }}{{ 8_249 }}={{ res }}{{ 8_249 }}>{{ res }}{{ 8_249 }} {{ res }}{{ blue }}"{{ res }}{{ blue }}5{{ res }}{{ blue }}"{{ res }}{{ 8_249 }},{{ res }}
  {{ 8_240 }}  |{{ res }}           {{ blue }}^{{ res }}{{ blue }}|{{ res }}{{ blue }}^{{ res }}
- {{ 8_240 }}  |{{ res }}            {{ blue }}`{{ res }}{{ blue }}-{{ res }}{{ blue }}-{{ res }}\
- {{ blue }}-{{ res }} This is of type Str
-{{ 8_246 }}---'{{ res }}\
-    ";
+ {{ 8_240 }}  |{{ res }}            {{ blue }}`{{ res }}{{ blue }}-{{ res }}{{ blue }}-{{ res }}{{ blue }}-{{ res }} This is of type Str
+{{ 8_246 }}---'{{ res }}
+    "#;
 
-    let styled = human_readable_to_ansi(readable);
+    let styled = human_readable_to_ansi(readable.trim());
 
     let converted = ansi_to_html::convert_escaped(&styled).unwrap();
-    insta::assert_snapshot!(converted);
+    insta::assert_snapshot!(converted, @r###"
+    <span style='color:#a00'>Error:</span> Incompatible types
+       <span style='color:#949494'>,-[</span>&lt;unknown&gt;:2:9<span style='color:#949494'>]</span>
+       <span style='color:#949494'>|</span>
+     <span style='color:#949494'>2 |</span> <span style='color:#b2b2b2'>    () =&gt; </span><span style='color:#0aa'>5</span><span style='color:#b2b2b2'>,</span>
+     <span style='color:#585858'>  |</span>           <span style='color:#0aa'>|</span>
+     <span style='color:#585858'>  |</span>           <span style='color:#0aa'>`--</span> This is of type Nat
+     <span style='color:#949494'>3 |</span> <span style='color:#b2b2b2'>    () =&gt; </span><span style='color:#00a'>&quot;5&quot;</span><span style='color:#b2b2b2'>,</span>
+     <span style='color:#585858'>  |</span>           <span style='color:#00a'>^|^</span>
+     <span style='color:#585858'>  |</span>            <span style='color:#00a'>`---</span> This is of type Str
+    <span style='color:#949494'>---&#39;</span>
+    "###);
 }
