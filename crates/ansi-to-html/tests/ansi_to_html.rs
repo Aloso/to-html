@@ -43,6 +43,9 @@ fn human_readable_to_ansi(s: &str) -> String {
     out
 }
 
+// `ariadne`, at least at the time of writing, has the bad habit of inserting a lot of redundant
+// styling for the same run of text. This test ensures that the redundant styling gets correctly
+// discarded while minifying. Issue: https://github.com/Aloso/to-html/issues/17
 #[test]
 fn ariadne() {
     let readable = "\
