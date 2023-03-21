@@ -48,6 +48,17 @@ fn human_readable_to_ansi(s: &str) -> String {
 // discarded while minifying. Issue: https://github.com/Aloso/to-html/issues/17
 #[test]
 fn ariadne() {
+    // Without styling:
+    // Error: Incompatible types
+    //    ,-[<unknown>:2:10]
+    //    |
+    //  2 |     () => 5,
+    //    |           |
+    //    |           `-- This is of type Nat
+    //  3 |     () => "5",
+    //    |           ^|^
+    //    |            `--- This is of type Str
+    // ---'
     let readable = r#"
 {{ red }}Error:{{ res }} Incompatible types
    {{ 8_246 }},{{ res }}{{ 8_246 }}-{{ res }}{{ 8_246 }}[{{ res }}<unknown>:2:9{{ 8_246 }}]{{ res }}
