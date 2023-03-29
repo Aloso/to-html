@@ -17,7 +17,7 @@ fn human_readable_to_ansi(s: &str) -> String {
             out.push_str("\x1b[");
             match inner {
                 // Control
-                "res" => out.push_str("0"),
+                "res" => out.push('0'),
                 // Basic colors
                 "blue" => out.push_str("34"),
                 "cyan" => out.push_str("36"),
