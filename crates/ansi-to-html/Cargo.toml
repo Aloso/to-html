@@ -1,6 +1,6 @@
 [package]
 name = "ansi-to-html"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 description = "ANSI escape codes to HTML converter"
 categories = ["command-line-interface", "encoding"]
@@ -15,13 +15,13 @@ keywords = ["color", "cli", "terminal", "html"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-regex = "1.6.0"
-thiserror = "1.0.34"
-once_cell = { version = "1.14.0", optional = true }
+regex = "1.7.3"
+thiserror = "1.0.40"
+once_cell = { version = "1.17.1", optional = true }
 
 [features]
 default = []
 lazy-init = ["once_cell"]
 
 [dev-dependencies]
-insta = "1.28.0"
+insta = "1.29.0"
