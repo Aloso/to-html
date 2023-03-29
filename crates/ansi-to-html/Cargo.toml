@@ -22,3 +22,6 @@ once_cell = { version = "1.14.0", optional = true }
 [features]
 default = []
 lazy-init = ["once_cell"]
+
+[dev-dependencies]
+insta = "1.28.0"
