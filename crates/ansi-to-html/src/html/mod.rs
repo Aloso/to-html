@@ -2,6 +2,8 @@ use regex::Regex;
 
 use crate::{Ansi, AnsiIter, Color, Error};
 
+mod minifier;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Style {
     Bold,
@@ -48,14 +50,14 @@ impl Style {
 
 /// Convert ANSI sequences to html. This does NOT escape html characters such as `<` and `&`.
 pub fn ansi_to_html(mut input: &str, ansi_regex: &Regex) -> Result<String, Error> {
-    let mut converter = AnsiConverter::default();
+    let mut minifier = minifier::Minifier::default();
 
     loop {
         match ansi_regex.find(input) {
             Some(m) => {
                 if m.start() > 0 {
                     let (before, after) = input.split_at(m.start());
-                    converter.push_str(before);
+                    minifier.push_str(before);
                     input = after;
                 }
 
@@ -67,7 +69,7 @@ pub fn ansi_to_html(mut input: &str, ansi_regex: &Regex) -> Result<String, Error
                 }
 
                 if len == 3 {
-                    converter.clear_style(|_| true);
+                    minifier.clear_styles();
                     continue;
                 }
 
@@ -75,18 +77,18 @@ pub fn ansi_to_html(mut input: &str, ansi_regex: &Regex) -> Result<String, Error
                 let nums = nums.split(';').map(|n| n.parse::<u8>());
 
                 for ansi in AnsiIter::new(nums) {
-                    converter.consume_ansi_code(ansi?);
+                    minifier.push_ansi_code(ansi?);
                 }
             }
             None => {
-                converter.push_str(input);
+                minifier.push_str(input);
                 break;
             }
         }
     }
-    converter.consume_ansi_code(Ansi::Reset); // make sure all tags are closed
+    minifier.push_ansi_code(Ansi::Reset); // make sure all tags are closed
 
-    Ok(converter.result())
+    Ok(minifier.into_html())
 }
 
 #[derive(Debug, Default)]
