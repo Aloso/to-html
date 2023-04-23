@@ -8,7 +8,7 @@ use std::{borrow::Cow, fmt::Write};
 use ansi_to_html::Esc;
 use logos::{Lexer, Logos};
 
-use crate::Args;
+use crate::opts::Opts;
 
 type StdError = Box<dyn std::error::Error>;
 
@@ -435,23 +435,23 @@ fn parse_d_string(
     Ok((DString(tokens), lex))
 }
 
-pub(crate) fn colorize(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
+pub(crate) fn colorize(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdError> {
     let lex = TokenKind::lexer(command);
     let (tokens, _) = parse_tokens(lex, |_| false)?;
 
-    tokens.colorize(buf, args, true)?;
+    tokens.colorize(buf, opts, true)?;
 
     Ok(())
 }
 
 impl Tokens<'_> {
-    fn colorize(&self, buf: &mut String, args: &Args, as_command: bool) -> Result<(), StdError> {
+    fn colorize(&self, buf: &mut String, opts: &Opts, as_command: bool) -> Result<(), StdError> {
         let mut next = if as_command {
             State::Start
         } else {
             State::Default
         };
-        let prefix = args.prefix.as_str();
+        let prefix = opts.prefix.as_str();
 
         #[derive(Debug, Copy, Clone, Eq, PartialEq)]
         enum State {
@@ -500,7 +500,7 @@ impl Tokens<'_> {
                         } else {
                             next = State::Default;
                             write!(buf, "<span class='{}cmd'>{}</span>", prefix, Esc(w))?;
-                            if args.highlight.iter().any(|h| h == w) {
+                            if opts.highlight.iter().any(|h| h == w) {
                                 hl_subcommand = true;
                                 continue;
                             }
@@ -523,38 +523,38 @@ impl Tokens<'_> {
                     }
                 }
                 Token::DString(d) => {
-                    d.colorize(buf, args)?;
+                    d.colorize(buf, opts)?;
                 }
                 &Token::SString(s) => {
                     write!(buf, "<span class='{}str'>{}</span>", prefix, Esc(s))?;
                 }
                 Token::Backticks(t) => {
                     write!(buf, "<span class='{}punct'>`</span>", prefix)?;
-                    t.colorize(buf, args, true)?;
+                    t.colorize(buf, opts, true)?;
                     write!(buf, "<span class='{}punct'>`</span>", prefix)?;
                 }
                 Token::Brackets(t) => {
                     write!(buf, "<span class='{}punct'>[</span>", prefix)?;
-                    t.colorize(buf, args, false)?;
+                    t.colorize(buf, opts, false)?;
                     write!(buf, "<span class='{}punct'>]</span>", prefix)?;
                 }
                 Token::Parens(t) => {
                     write!(buf, "<span class='{}punct'>(</span>", prefix)?;
-                    t.colorize(buf, args, false)?;
+                    t.colorize(buf, opts, false)?;
                     write!(buf, "<span class='{}punct'>)</span>", prefix)?;
                 }
                 Token::DollarParens(t) => {
                     write!(buf, "<span class='{}punct'>$(</span>", prefix)?;
-                    t.colorize(buf, args, true)?;
+                    t.colorize(buf, opts, true)?;
                     write!(buf, "<span class='{}punct'>)</span>", prefix)?;
                 }
                 Token::Braces(t) => {
                     write!(buf, "<span class='{}punct'>{{</span>", prefix)?;
-                    t.colorize(buf, args, true)?;
+                    t.colorize(buf, opts, true)?;
                     write!(buf, "<span class='{}punct'>}}</span>", prefix)?;
                 }
                 Token::Heredoc(h) => {
-                    h.colorize(buf, args)?;
+                    h.colorize(buf, opts)?;
                 }
                 &Token::Variable(v) => {
                     write!(buf, "<span class='{}var'>{}</span>", prefix, Esc(v))?;
@@ -568,8 +568,8 @@ impl Tokens<'_> {
 }
 
 impl DString<'_> {
-    fn colorize(&self, buf: &mut String, args: &Args) -> Result<(), StdError> {
-        let prefix = args.prefix.as_str();
+    fn colorize(&self, buf: &mut String, opts: &Opts) -> Result<(), StdError> {
+        let prefix = opts.prefix.as_str();
         write!(buf, "<span class='{}str'>\"", prefix)?;
 
         for token in &self.0 {
@@ -585,12 +585,12 @@ impl DString<'_> {
                 }
                 DStringToken::Backticks(t) => {
                     write!(buf, "`</span>")?;
-                    t.colorize(buf, args, true)?;
+                    t.colorize(buf, opts, true)?;
                     write!(buf, "<span class='{}str'>`", prefix)?;
                 }
                 DStringToken::Parens(t) => {
                     write!(buf, "$(</span>")?;
-                    t.colorize(buf, args, true)?;
+                    t.colorize(buf, opts, true)?;
                     write!(buf, "<span class='{}str'>)", prefix)?;
                 }
             }
@@ -602,11 +602,11 @@ impl DString<'_> {
 }
 
 impl Heredoc<'_> {
-    fn colorize(&self, buf: &mut String, args: &Args) -> Result<(), StdError> {
-        let prefix = args.prefix.as_str();
+    fn colorize(&self, buf: &mut String, opts: &Opts) -> Result<(), StdError> {
+        let prefix = opts.prefix.as_str();
 
         write!(buf, "&lt;&lt;")?;
-        self.first_line.colorize(buf, args, false)?;
+        self.first_line.colorize(buf, opts, false)?;
         writeln!(buf)?;
 
         write!(buf, "<span class='{}str'>", prefix)?;

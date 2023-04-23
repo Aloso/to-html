@@ -1,106 +1,13 @@
 use ansi_to_html::Esc;
-use clap::Parser;
-use std::{borrow::Cow, error, fmt::Write, path::PathBuf};
+use std::{borrow::Cow, error, fmt::Write};
 
 pub mod cmd;
 mod lexer;
+mod opts;
+
+use opts::{Opts, ShellPrompt};
 
 pub type StdError = Box<dyn error::Error>;
-
-#[derive(Parser)]
-#[command(
-    author,
-    version,
-    about,
-    max_term_width = 100,
-    help_template = "\
-{before-help}{name} {version}
-{author-with-newline}{about-with-newline}
-{usage-heading} {usage}
-
-{all-args}{after-help}"
-)]
-struct Cli {
-    /// The command(s) to execute. Must be wrapped in quotes.
-    #[arg(required = true)]
-    commands: Vec<String>,
-    /// The shell to run the command in. On macOS and FreeBSD, the shell has to support
-    /// `-c <command>`
-    #[arg(short, long)]
-    shell: Option<String>,
-    /// Programs that have subcommands (which should be highlighted). Multiple arguments are
-    /// separated with a comma, e.g. `to-html -l git,cargo,npm "git checkout main"`
-    #[arg(short = 'l', long, value_delimiter = ',')]
-    highlight: Vec<String>,
-    /// Prefix for CSS classes. For example, with the `to-html` prefix, the `arg` class becomes
-    /// `to-html-arg`
-    #[arg(short, long)]
-    prefix: Option<String>,
-    /// Don't run the commands, just emit the HTML for the command prompt
-    #[arg(short, long)]
-    no_run: bool,
-    /// Print the (abbreviated) current working directory in the command prompt
-    #[arg(short, long)]
-    cwd: bool,
-    /// Output a complete HTML document, not just a `<pre>`
-    #[arg(short, long)]
-    doc: bool,
-}
-
-#[derive(Debug)]
-struct Args {
-    commands: Vec<String>,
-    shell: Option<String>,
-    highlight: Vec<String>,
-    prefix: String,
-    no_run: bool,
-    prompt: ShellPrompt,
-    doc: bool,
-}
-
-impl From<Cli> for Args {
-    fn from(cli: Cli) -> Self {
-        let Cli {
-            shell,
-            highlight,
-            prefix,
-            no_run,
-            cwd,
-            doc,
-            commands,
-        } = cli;
-
-        let prefix = prefix.map(|s| format!("{}-", Esc(s))).unwrap_or_default();
-        let prompt = if cwd {
-            ShellPrompt::Cwd {
-                home: dirs_next::home_dir(),
-            }
-        } else {
-            ShellPrompt::Arrow
-        };
-
-        Self {
-            commands,
-            shell,
-            highlight,
-            prefix,
-            no_run,
-            prompt,
-            doc,
-        }
-    }
-}
-
-#[derive(Debug)]
-enum ShellPrompt {
-    Arrow,
-    Cwd { home: Option<PathBuf> },
-}
-
-fn parse_args() -> Args {
-    let cli = Cli::parse();
-    Args::from(cli)
-}
 
 fn main() {
     match main_inner() {
@@ -113,11 +20,11 @@ fn main() {
 }
 
 fn main_inner() -> Result<(), StdError> {
-    let args = parse_args();
+    let opts = opts::Opts::load()?;
 
     let mut buf = String::new();
 
-    if args.doc {
+    if opts.doc {
         let lang = std::env::var("LANG")
             .ok()
             .and_then(|s| s.split('.').next().map(|s| s.replace('_', "-")));
@@ -128,7 +35,7 @@ fn main_inner() -> Result<(), StdError> {
             writeln!(buf, "<html>")?;
         }
 
-        let mut title = args
+        let mut title = opts
             .commands
             .iter()
             .flat_map(|s| s.chars().chain(", ".chars()))
@@ -144,27 +51,27 @@ fn main_inner() -> Result<(), StdError> {
 </head>
 <body>",
             Esc(title),
-            make_style(&args.prefix),
+            make_style(&opts.prefix),
         )?;
     }
 
-    writeln!(buf, "<pre class=\"{}terminal\">", args.prefix)?;
+    writeln!(buf, "<pre class=\"{}terminal\">", opts.prefix)?;
 
-    for command in &args.commands {
-        if args.no_run {
-            fmt_command_prompt(&mut buf, command, &args)?;
+    for command in &opts.commands {
+        if opts.no_run {
+            fmt_command_prompt(&mut buf, command, &opts)?;
         } else {
-            fmt_command(&mut buf, command, &args)?;
+            fmt_command(&mut buf, command, &opts)?;
         }
     }
 
-    if !args.no_run {
-        shell_prompt(&mut buf, &args)?;
-        writeln!(buf, "<span class='{p}caret'> </span>", p = args.prefix)?;
+    if !opts.no_run {
+        shell_prompt(&mut buf, &opts)?;
+        writeln!(buf, "<span class='{p}caret'> </span>", p = opts.prefix)?;
     }
     write!(buf, "</pre>")?;
 
-    if args.doc {
+    if opts.doc {
         writeln!(buf, "</body>\n</html>")?;
     }
 
@@ -173,10 +80,10 @@ fn main_inner() -> Result<(), StdError> {
     Ok(())
 }
 
-fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
-    fmt_command_prompt(buf, command, args)?;
+fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdError> {
+    fmt_command_prompt(buf, command, opts)?;
 
-    let (cmd_out, cmd_err, _) = cmd::run(command, args.shell.as_deref())?;
+    let (cmd_out, cmd_err, _) = cmd::run(command, opts.shell.as_deref())?;
     if !cmd_out.is_empty() {
         let html = ansi_to_html::convert_escaped(&cmd_out)?;
         write!(buf, "{}", html)?;
@@ -189,18 +96,18 @@ fn fmt_command(buf: &mut String, command: &str, args: &Args) -> Result<(), StdEr
     Ok(())
 }
 
-fn fmt_command_prompt(buf: &mut String, command: &str, args: &Args) -> Result<(), StdError> {
-    shell_prompt(buf, args)?;
-    lexer::colorize(buf, command, args)?;
+fn fmt_command_prompt(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdError> {
+    shell_prompt(buf, opts)?;
+    lexer::colorize(buf, command, opts)?;
     writeln!(buf)?;
 
     Ok(())
 }
 
-fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), StdError> {
-    match &args.prompt {
+fn shell_prompt(buf: &mut String, opts: &Opts) -> Result<(), StdError> {
+    match &opts.prompt {
         ShellPrompt::Arrow => {
-            write!(buf, "<span class='{}shell'>&gt; </span>", args.prefix)?;
+            write!(buf, "<span class='{}shell'>&gt; </span>", opts.prefix)?;
         }
         ShellPrompt::Cwd { home } => {
             let cwd = std::env::current_dir()?;
@@ -217,7 +124,7 @@ fn shell_prompt(buf: &mut String, args: &Args) -> Result<(), StdError> {
                 buf,
                 "<span class='{p}cwd'>{} </span><span class='{p}shell'>$ </span>",
                 Esc(&cwd),
-                p = args.prefix
+                p = opts.prefix
             )?;
         }
     }

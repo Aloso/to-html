@@ -1,0 +1,23 @@
+[shell]
+# The shell to run commands under
+# CLI Arg: --shell
+# Default: "bash"
+program = "zsh"
+
+[output]
+# If the current working directory should be displayed in the shell prompt
+# CLI Arg: --cwd
+# Default: false
+cwd = true
+# Whether the output should generate a whole HTML document (including CSS)
+# CLI Arg: --doc
+# Default: false
+full_document = true
+# Commands to syntax highlight from the provided commands
+# CLI Arg: --highlight
+# Default: []
+highlight = ["cargo", "git"]
+# A custom prefix used for CSS classes
+# CLI Arg: --prefix
+# Default: Not set
+css_prefix = "custom"
