@@ -37,19 +37,17 @@ impl CurrentStyling {
     }
 }
 
-/// Collects runs of text and ANSI codes in an organized layout to allow for easy minifying before
-/// converting to HTML
-#[derive(Debug)]
+/// Basic minifier that avoids reapplying the same style to consecutive runs of text
+///
+/// E.g.
+/// Blue - "foo" - Reset, Blue - "bar" - Reset
+/// becomes
+/// Blue - "foo" - "bar" - Reset
+#[derive(Debug, Default)]
 pub(crate) struct Minifier {
-    storage: Vec<(String, Vec<Ansi>)>,
-}
-
-impl Default for Minifier {
-    fn default() -> Self {
-        Self {
-            storage: vec![(String::new(), Vec::new())],
-        }
-    }
+    code_buffer: Vec<Ansi>,
+    current_styling: CurrentStyling,
+    converter: AnsiConverter,
 }
 
 impl Minifier {
@@ -58,47 +56,30 @@ impl Minifier {
     }
 
     pub fn push_ansi_code(&mut self, ansi: Ansi) {
-        self.storage
-            .last_mut()
-            .expect("Starts with an entry")
-            .1
-            .push(ansi);
+        self.code_buffer.push(ansi);
     }
 
-    pub fn push_str(&mut self, s: &str) {
-        let top = self.storage.last_mut().expect("Starts with an entry");
-        if top.1.is_empty() {
-            top.0.push_str(s);
-        } else {
-            self.storage.push((s.to_owned(), Vec::new()));
+    /// Apply buffered ansi codes while ignoring ansi codes that repeat the previously used style
+    fn apply_ansi_codes(&mut self) {
+        let prev_styling = self.current_styling;
+        for &code in &self.code_buffer {
+            self.current_styling.apply(code);
         }
+        if prev_styling != self.current_styling {
+            for &code in &self.code_buffer {
+                self.converter.consume_ansi_code(code);
+            }
+        }
+        self.code_buffer.clear();
     }
 
-    pub fn into_html(self) -> String {
-        let Self { storage } = self;
+    pub fn push_str(&mut self, text: &str) {
+        self.apply_ansi_codes();
+        self.converter.push_str(text);
+    }
 
-        // Iterate over each pair ignoring ansi codes that repeat the previously used style before
-        // text is used. E.g.
-        // Blue - "foo" - Reset, Blue - "bar" - Reset
-        // becomes
-        // Blue - "foo" - "bar" - Reset
-        let mut styling = CurrentStyling::default();
-        let mut converter = AnsiConverter::default();
-        for (text, codes) in storage {
-            converter.push_str(&text);
-
-            // Only consume ansi codes if the styling would be different
-            let prev_styling = styling;
-            for &code in &codes {
-                styling.apply(code);
-            }
-            if prev_styling != styling {
-                for &code in &codes {
-                    converter.consume_ansi_code(code);
-                }
-            }
-        }
-
-        converter.result()
+    pub fn into_html(mut self) -> String {
+        self.apply_ansi_codes();
+        self.converter.result()
     }
 }
