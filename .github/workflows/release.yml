@@ -61,10 +61,8 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            file_ending: ""
           - os: macos-latest
             platform: macos
-            file_ending: ""
 
     steps:
       - name: Checkout
@@ -80,14 +78,14 @@ jobs:
         run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
       - name: Build project
+        env:
+          SHELL_COMPLETIONS_DIR: completions
         run: cargo build --release --locked
 
       - name: Upload release assets
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: taiki-e/upload-rust-binary-action@v1
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: to-html_${{ matrix.platform }}_${{ steps.vars.outputs.tag }}${{ matrix.file_ending }}
-          asset_path: target/release/to-html${{ matrix.file_ending }}
-          asset_content_type: application/octet-stream
+          bin: to-html
+          include: completions
+          asset_name: to-html_${{ matrix.platform }}_${{ steps.vars.outputs.tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}
