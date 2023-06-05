@@ -227,7 +227,7 @@ pub(crate) enum DStringTokenKind {
     #[token("$(", priority = 3)]
     OpenDollarParen,
 
-    #[regex(r#"\\[`\$\\"]"#, priority = 2)]
+    #[regex(r#"\\[`\$\\"a-z0-9]"#, priority = 2)]
     Escaped,
 
     #[regex(r#"[^\\\$`"]+"#, priority = 1)]
