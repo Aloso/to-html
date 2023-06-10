@@ -83,13 +83,18 @@ fn main_inner() -> Result<(), StdError> {
 fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdError> {
     fmt_command_prompt(buf, command, opts)?;
 
+    let mut convert_opts = ansi_to_html::Opts::default();
+    if opts.color_classes {
+        convert_opts = convert_opts.four_bit_color_type(ansi_to_html::FourBitColorType::Class);
+    }
+
     let (cmd_out, cmd_err, _) = cmd::run(command, opts.shell.as_deref())?;
     if !cmd_out.is_empty() {
-        let html = ansi_to_html::convert_escaped(&cmd_out)?;
+        let html = ansi_to_html::convert_with_opts(&cmd_out, &convert_opts)?;
         write!(buf, "{}", html)?;
     }
     if !cmd_err.is_empty() {
-        let html = ansi_to_html::convert_escaped(&cmd_err)?;
+        let html = ansi_to_html::convert_with_opts(&cmd_err, &convert_opts)?;
         write!(buf, "{}", html)?;
     }
 

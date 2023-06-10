@@ -42,4 +42,7 @@ pub struct Cli {
     /// Output a complete HTML document, not just a `<pre>`
     #[arg(short, long)]
     pub doc: bool,
+    /// Use configurable classes for 4-bit color spans instead of using hardcoded colors
+    #[arg(long)]
+    pub color_classes: bool,
 }
