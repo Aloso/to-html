@@ -74,7 +74,7 @@ fn ariadne() {
 
     let styled = human_readable_to_ansi(readable.trim());
 
-    let converted = ansi_to_html::convert_escaped(&styled).unwrap();
+    let converted = ansi_to_html::convert(&styled).unwrap();
     insta::assert_snapshot!(converted, @r###"
     <span style='color:#a00'>Error:</span> Incompatible types
        <span style='color:#949494'>,-[</span>&lt;unknown&gt;:2:9<span style='color:#949494'>]</span>

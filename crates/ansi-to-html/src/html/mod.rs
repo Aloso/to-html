@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::{Ansi, AnsiIter, Color, Error};
+use crate::{Ansi, AnsiIter, Color, Error, FourBitColorType};
 
 mod minifier;
 
@@ -16,7 +16,7 @@ enum Style {
 }
 
 impl Style {
-    fn apply(&self, buf: &mut String) {
+    fn apply(&self, buf: &mut String, color_type: FourBitColorType) {
         let s;
         buf.push_str(match self {
             Style::Bold => "<b>",
@@ -25,11 +25,11 @@ impl Style {
             Style::Underline => "<u>",
             Style::CrossedOut => "<s>",
             Style::ForegroundColor(c) => {
-                s = format!("<span style='color:{}'>", c);
+                s = c.into_opening_fg_span(color_type);
                 &s
             }
             Style::BackgroundColor(c) => {
-                s = format!("<span style='background:{}'>", c);
+                s = c.into_opening_bg_span(color_type);
                 &s
             }
         });
@@ -49,8 +49,12 @@ impl Style {
 }
 
 /// Convert ANSI sequences to html. This does NOT escape html characters such as `<` and `&`.
-pub fn ansi_to_html(mut input: &str, ansi_regex: &Regex) -> Result<String, Error> {
-    let mut minifier = minifier::Minifier::default();
+pub fn ansi_to_html(
+    mut input: &str,
+    ansi_regex: &Regex,
+    color_type: FourBitColorType,
+) -> Result<String, Error> {
+    let mut minifier = minifier::Minifier::new(color_type);
 
     loop {
         match ansi_regex.find(input) {
@@ -96,9 +100,17 @@ struct AnsiConverter {
     styles: Vec<Style>,
     styles_to_apply: Vec<Style>,
     result: String,
+    four_bit: FourBitColorType,
 }
 
 impl AnsiConverter {
+    fn new(four_bit: FourBitColorType) -> Self {
+        Self {
+            four_bit,
+            ..Self::default()
+        }
+    }
+
     fn consume_ansi_code(&mut self, ansi: Ansi) {
         match ansi {
             Ansi::Noop => {}
@@ -126,7 +138,7 @@ impl AnsiConverter {
 
     fn set_style(&mut self, s: Style) {
         if !self.styles.contains(&s) {
-            s.apply(&mut self.result);
+            s.apply(&mut self.result, self.four_bit);
             self.styles.push(s);
         }
     }
@@ -142,7 +154,7 @@ impl AnsiConverter {
             }
         }
         for &style in &self.styles_to_apply {
-            style.apply(&mut self.result);
+            style.apply(&mut self.result, self.four_bit);
             self.styles.push(style);
         }
         self.styles_to_apply.clear();

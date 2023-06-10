@@ -37,12 +37,13 @@
 //!
 //! ## Example
 //! ```
-//! // \x1b[1m : bold   \x1b[31m : red
-//! let input = "<h1> \x1b[1m Hello \x1b[31m world! </h1>";
-//! let converted = ansi_to_html::convert_escaped(input).unwrap();
+//! let bold = "\x1b[1m";
+//! let red = "\x1b[31m";
+//! let input = format!("<h1> {bold}Hello {red}world! </h1>");
+//! let converted = ansi_to_html::convert(&input).unwrap();
 //! assert_eq!(
-//!     converted.as_str(),
-//!     "&lt;h1&gt; <b> Hello <span style='color:#a00'> world! &lt;/h1&gt;</span></b>"
+//!     converted,
+//!     "&lt;h1&gt; <b>Hello <span style='color:#a00'>world! &lt;/h1&gt;</span></b>"
 //! );
 //! ```
 //!
@@ -69,6 +70,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 /// Converts a string containing ANSI escape codes to HTML.
+///
 /// Special html characters (`<>&'"`) are escaped prior to the conversion.
 ///
 /// This function attempts to minimize the number of generated HTML tags.
@@ -76,22 +78,82 @@ use regex::Regex;
 /// ## Example
 ///
 /// ```
-/// // \x1b[1m : bold   \x1b[31m : red
-/// let input = "<h1> \x1b[1m Hello \x1b[31m world! </h1>";
-/// let converted = ansi_to_html::convert_escaped(input).unwrap();
+/// let bold = "\x1b[1m";
+/// let red = "\x1b[31m";
+/// let input = format!("<h1> {bold}Hello {red}world! </h1>");
+/// let converted = ansi_to_html::convert(&input).unwrap();
 ///
 /// assert_eq!(
-///     converted.as_str(),
-///     "&lt;h1&gt; <b> Hello <span style='color:#a00'> world! &lt;/h1&gt;</span></b>"
+///     converted,
+///     "&lt;h1&gt; <b>Hello <span style='color:#a00'>world! &lt;/h1&gt;</span></b>",
 /// );
 /// ```
-pub fn convert_escaped(ansi_string: &str) -> Result<String, Error> {
-    let input = Esc(ansi_string).to_string();
-    let html = html::ansi_to_html(&input, &ansi_regex())?;
-    Ok(optimize(&html))
+pub fn convert(ansi_string: &str) -> Result<String, Error> {
+    convert_with_opts(ansi_string, &Opts::default())
 }
 
-/// Converts a string containing ANSI escape codes to HTML.
+/// Dictates use of `<span class='{name}'>` or `<span style='color:{hex}'>` for 4-bit colors
+///
+/// See [`Opts::four_bit_color_type()`] for how to set this.
+#[derive(Clone, Copy, Debug, Default)]
+pub enum FourBitColorType {
+    /// Uses `<span style='color:{hex}'>` with hardcoded values for each color.
+    #[default]
+    Hardcoded,
+    /// Uses `<span class='{name}'>` with a unique name for each color.
+    ///
+    /// The `{name}` is set as follows:
+    ///
+    /// 1. The name for the color e.g. `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`,
+    ///    and `white`.
+    /// 2. If the color is the bright variant then it will be prefixed with `bright-`.
+    /// 3. If it is a background color then it will be prefixed with `bg-`.
+    ///
+    /// ## Example
+    ///
+    /// - Background bright red - `bg-bright-red`
+    /// - Background blue - `bg-blue`
+    /// - Plain Yellow - `yellow`
+    Class,
+}
+
+/// Customizes the behavior of [`convert_with_opts()`]
+///
+/// By default this will:
+///
+/// - Escape special HTML characters (`<>&'"`) prior to conversion.
+/// - Optimizes to minimize the number of generated HTML tags.
+/// - Uses hardcoded colors.
+#[derive(Clone, Debug, Default)]
+pub struct Opts {
+    skip_escape: bool,
+    skip_optimize: bool,
+    four_bit: FourBitColorType,
+}
+
+impl Opts {
+    /// Avoids escaping special HTML characters prior to conversion.
+    pub fn skip_escape(mut self, skip: bool) -> Self {
+        self.skip_escape = skip;
+        self
+    }
+
+    /// Skips removing some useless HTML tags.
+    pub fn skip_optimize(mut self, skip: bool) -> Self {
+        self.skip_optimize = skip;
+        self
+    }
+
+    /// Configures how color span's attributes will have the color applied.
+    ///
+    /// Defaults to using hardcoded hex colors.
+    pub fn four_bit_color_type(mut self, color_type: FourBitColorType) -> Self {
+        self.four_bit = color_type;
+        self
+    }
+}
+
+/// Converts a string containing ANSI escape codes to HTML with customized behavior.
 ///
 /// If `escaped` is `true`, then special html characters (`<>&'"`) are escaped prior
 /// to the conversion.
@@ -102,24 +164,45 @@ pub fn convert_escaped(ansi_string: &str) -> Result<String, Error> {
 /// ## Example
 ///
 /// ```
-/// // \x1b[1m : bold   \x1b[31m : red   \x1b[22m : bold off
-/// let input = "\x1b[1m Hello \x1b[31m world \x1b[22m!";
-/// let converted = ansi_to_html::convert_escaped(input).unwrap();
+/// use ansi_to_html::{convert_with_opts, FourBitColorType, Opts};
+///
+/// let opts = Opts::default()
+///     .skip_escape(true)
+///     .skip_optimize(true)
+///     .four_bit_color_type(FourBitColorType::Class);
+/// let bold = "\x1b[1m";
+/// let red = "\x1b[31m";
+/// let reset = "\x1b[0m";
+/// let input = format!("<h1> <i></i> {bold}Hello {red}world!{reset} </h1>");
+/// let converted = convert_with_opts(&input, &opts).unwrap();
 ///
 /// assert_eq!(
-///     converted.as_str(),
-///     "<b> Hello <span style='color:#a00'> world </span></b><span style='color:#a00'>!</span>"
+///     converted,
+///     // The `<h1>` and `</h1>` aren't escaped, useless `<i></i>` is kept, and
+///     // `<span class='red'>` is used instead of `<span style='color:#a00'>`
+///     "<h1> <i></i> <b>Hello <span class='red'>world!</span></b> </h1>",
 /// );
 /// ```
-pub fn convert(input: &str, escaped: bool, optimized: bool) -> Result<String, Error> {
-    let html = if escaped {
-        let input = Esc(input).to_string();
-        html::ansi_to_html(&input, &ansi_regex())?
+pub fn convert_with_opts(input: &str, opts: &Opts) -> Result<String, Error> {
+    let Opts {
+        skip_escape,
+        skip_optimize,
+        four_bit,
+    } = opts;
+
+    let html = if *skip_escape {
+        html::ansi_to_html(input, &ansi_regex(), *four_bit)?
     } else {
-        html::ansi_to_html(input, &ansi_regex())?
+        let input = Esc(input).to_string();
+        html::ansi_to_html(&input, &ansi_regex(), *four_bit)?
     };
 
-    let html = if optimized { optimize(&html) } else { html };
+    let html = if *skip_optimize {
+        html
+    } else {
+        optimize(&html)
+    };
+
     Ok(html)
 }
 
