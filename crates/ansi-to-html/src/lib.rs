@@ -95,11 +95,21 @@ pub fn convert(ansi_string: &str) -> Result<String, Error> {
 /// Dictates use of `<span class='{name}'>` or `<span style='color:{hex}'>` for 4-bit colors
 ///
 /// See [`Opts::four_bit_color_type()`] for how to set this.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub enum FourBitColorType {
-    /// Uses `<span style='color:{hex}'>` with hardcoded values for each color.
     #[default]
     Hardcoded,
+    Class {
+        prefix: Option<String>,
+    },
+}
+
+impl FourBitColorType {
+    /// Uses `<span style='color:{hex}'>` with hardcoded values for each color.
+    pub fn hardcoded() -> Self {
+        Self::Hardcoded
+    }
+
     /// Uses `<span class='{name}'>` with a unique name for each color.
     ///
     /// The `{name}` is set as follows:
@@ -114,7 +124,18 @@ pub enum FourBitColorType {
     /// - Background bright red - `bg-bright-red`
     /// - Background blue - `bg-blue`
     /// - Plain Yellow - `yellow`
-    Class,
+    pub fn class() -> Self {
+        Self::Class { prefix: None }
+    }
+
+    /// Same as [`Self::class()`], but with a custom prefix before each class.
+    ///
+    /// This value is not HTML-escaped
+    pub fn class_with_prefix(prefix: &str) -> Self {
+        Self::Class {
+            prefix: Some(prefix.to_owned()),
+        }
+    }
 }
 
 /// Customizes the behavior of [`convert_with_opts()`]
@@ -169,7 +190,7 @@ impl Opts {
 /// let opts = Opts::default()
 ///     .skip_escape(true)
 ///     .skip_optimize(true)
-///     .four_bit_color_type(FourBitColorType::Class);
+///     .four_bit_color_type(FourBitColorType::class());
 /// let bold = "\x1b[1m";
 /// let red = "\x1b[31m";
 /// let reset = "\x1b[0m";
@@ -191,10 +212,10 @@ pub fn convert_with_opts(input: &str, opts: &Opts) -> Result<String, Error> {
     } = opts;
 
     let html = if *skip_escape {
-        html::ansi_to_html(input, &ansi_regex(), *four_bit)?
+        html::ansi_to_html(input, &ansi_regex(), four_bit.to_owned())?
     } else {
         let input = Esc(input).to_string();
-        html::ansi_to_html(&input, &ansi_regex(), *four_bit)?
+        html::ansi_to_html(&input, &ansi_regex(), four_bit.to_owned())?
     };
 
     let html = if *skip_optimize {

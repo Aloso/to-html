@@ -85,7 +85,12 @@ fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdEr
 
     let mut convert_opts = ansi_to_html::Opts::default();
     if opts.color_classes {
-        convert_opts = convert_opts.four_bit_color_type(ansi_to_html::FourBitColorType::Class);
+        let color_type = if opts.prefix.is_empty() {
+            ansi_to_html::FourBitColorType::class()
+        } else {
+            ansi_to_html::FourBitColorType::class_with_prefix(&opts.prefix)
+        };
+        convert_opts = convert_opts.four_bit_color_type(color_type);
     }
 
     let (cmd_out, cmd_err, _) = cmd::run(command, opts.shell.as_deref())?;

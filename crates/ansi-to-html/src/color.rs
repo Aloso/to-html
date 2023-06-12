@@ -82,17 +82,21 @@ impl Color {
         })
     }
 
-    pub(crate) fn into_opening_fg_span(self, color_type: FourBitColorType) -> String {
+    pub(crate) fn into_opening_fg_span(self, color_type: &FourBitColorType) -> String {
         self.into_opening_span(color_type, true)
     }
 
-    pub(crate) fn into_opening_bg_span(self, color_type: FourBitColorType) -> String {
+    pub(crate) fn into_opening_bg_span(self, color_type: &FourBitColorType) -> String {
         self.into_opening_span(color_type, false)
     }
 
-    pub(crate) fn into_opening_span(self, color_type: FourBitColorType, is_fg: bool) -> String {
-        if let (Self::FourBit(four_bit), FourBitColorType::Class) = (self, color_type) {
+    pub(crate) fn into_opening_span(self, color_type: &FourBitColorType, is_fg: bool) -> String {
+        if let (Self::FourBit(four_bit), FourBitColorType::Class { prefix }) = (self, color_type) {
             let mut s = "<span class='".to_owned();
+            if let Some(prefix) = prefix {
+                s.push_str(prefix);
+            }
+
             if is_fg {
                 four_bit.write_fg_class(&mut s);
             } else {
