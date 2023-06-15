@@ -43,7 +43,7 @@
 //! let converted = ansi_to_html::convert(&input).unwrap();
 //! assert_eq!(
 //!     converted,
-//!     "&lt;h1&gt; <b>Hello <span style='color:#a00'>world! &lt;/h1&gt;</span></b>"
+//!     "&lt;h1&gt; <b>Hello <span style='color:var(--red,#a00)'>world! &lt;/h1&gt;</span></b>"
 //! );
 //! ```
 //!
@@ -85,57 +85,11 @@ use regex::Regex;
 ///
 /// assert_eq!(
 ///     converted,
-///     "&lt;h1&gt; <b>Hello <span style='color:#a00'>world! &lt;/h1&gt;</span></b>",
+///     "&lt;h1&gt; <b>Hello <span style='color:var(--red,#a00)'>world! &lt;/h1&gt;</span></b>",
 /// );
 /// ```
 pub fn convert(ansi_string: &str) -> Result<String, Error> {
     convert_with_opts(ansi_string, &Opts::default())
-}
-
-/// Dictates use of `<span class='{name}'>` or `<span style='color:{hex}'>` for 4-bit colors
-///
-/// See [`Opts::four_bit_color_type()`] for how to set this.
-#[derive(Clone, Debug, Default)]
-pub enum FourBitColorType {
-    #[default]
-    Hardcoded,
-    Class {
-        prefix: Option<String>,
-    },
-}
-
-impl FourBitColorType {
-    /// Uses `<span style='color:{hex}'>` with hardcoded values for each color.
-    pub fn hardcoded() -> Self {
-        Self::Hardcoded
-    }
-
-    /// Uses `<span class='{name}'>` with a unique name for each color.
-    ///
-    /// The `{name}` is set as follows:
-    ///
-    /// 1. The name for the color e.g. `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`,
-    ///    and `white`.
-    /// 2. If the color is the bright variant then it will be prefixed with `bright-`.
-    /// 3. If it is a background color then it will be prefixed with `bg-`.
-    ///
-    /// ## Example
-    ///
-    /// - Background bright red - `bg-bright-red`
-    /// - Background blue - `bg-blue`
-    /// - Plain Yellow - `yellow`
-    pub fn class() -> Self {
-        Self::Class { prefix: None }
-    }
-
-    /// Same as [`Self::class()`], but with a custom prefix before each class.
-    ///
-    /// This value is not HTML-escaped
-    pub fn class_with_prefix(prefix: &str) -> Self {
-        Self::Class {
-            prefix: Some(prefix.to_owned()),
-        }
-    }
 }
 
 /// Customizes the behavior of [`convert_with_opts()`]
@@ -149,7 +103,7 @@ impl FourBitColorType {
 pub struct Opts {
     skip_escape: bool,
     skip_optimize: bool,
-    four_bit: FourBitColorType,
+    four_bit_var_prefix: Option<String>,
 }
 
 impl Opts {
@@ -165,11 +119,9 @@ impl Opts {
         self
     }
 
-    /// Configures how color span's attributes will have the color applied.
-    ///
-    /// Defaults to using hardcoded hex colors.
-    pub fn four_bit_color_type(mut self, color_type: FourBitColorType) -> Self {
-        self.four_bit = color_type;
+    /// Adds a custom prefix for the CSS variables used for all the 4-bit colors.
+    pub fn four_bit_var_prefix(mut self, prefix: Option<String>) -> Self {
+        self.four_bit_var_prefix = prefix;
         self
     }
 }
@@ -185,12 +137,12 @@ impl Opts {
 /// ## Example
 ///
 /// ```
-/// use ansi_to_html::{convert_with_opts, FourBitColorType, Opts};
+/// use ansi_to_html::{convert_with_opts, Opts};
 ///
 /// let opts = Opts::default()
 ///     .skip_escape(true)
 ///     .skip_optimize(true)
-///     .four_bit_color_type(FourBitColorType::class());
+///     .four_bit_var_prefix(Some("custom-".to_owned()));
 /// let bold = "\x1b[1m";
 /// let red = "\x1b[31m";
 /// let reset = "\x1b[0m";
@@ -201,21 +153,21 @@ impl Opts {
 ///     converted,
 ///     // The `<h1>` and `</h1>` aren't escaped, useless `<i></i>` is kept, and
 ///     // `<span class='red'>` is used instead of `<span style='color:#a00'>`
-///     "<h1> <i></i> <b>Hello <span class='red'>world!</span></b> </h1>",
+///     "<h1> <i></i> <b>Hello <span style='color:var(--custom-red,#a00)'>world!</span></b> </h1>",
 /// );
 /// ```
 pub fn convert_with_opts(input: &str, opts: &Opts) -> Result<String, Error> {
     let Opts {
         skip_escape,
         skip_optimize,
-        four_bit,
+        four_bit_var_prefix,
     } = opts;
 
     let html = if *skip_escape {
-        html::ansi_to_html(input, &ansi_regex(), four_bit.to_owned())?
+        html::ansi_to_html(input, &ansi_regex(), four_bit_var_prefix.to_owned())?
     } else {
         let input = Esc(input).to_string();
-        html::ansi_to_html(&input, &ansi_regex(), four_bit.to_owned())?
+        html::ansi_to_html(&input, &ansi_regex(), four_bit_var_prefix.to_owned())?
     };
 
     let html = if *skip_optimize {

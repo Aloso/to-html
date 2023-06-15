@@ -22,7 +22,6 @@ pub struct Opts {
     pub no_run: bool,
     pub prompt: ShellPrompt,
     pub doc: bool,
-    pub color_classes: bool,
 }
 
 impl Opts {
@@ -37,7 +36,6 @@ impl Opts {
                     full_document: config_doc,
                     highlight: config_highlight,
                     css_prefix: config_prefix,
-                    color_classes: config_color_classes,
                 },
         } = config::load()?;
 
@@ -49,7 +47,6 @@ impl Opts {
             no_run: cli_no_run,
             cwd: cli_cwd,
             doc: cli_doc,
-            color_classes: cli_color_classes,
         } = cli::parse();
 
         let prompt = if cli_cwd || config_cwd {
@@ -72,7 +69,6 @@ impl Opts {
             no_run: cli_no_run,
             prompt,
             doc: cli_doc || config_doc,
-            color_classes: cli_color_classes || config_color_classes,
         })
     }
 }

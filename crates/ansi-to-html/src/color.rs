@@ -1,6 +1,9 @@
-use std::{fmt, num::ParseIntError};
+use std::{
+    fmt::{self, Write},
+    num::ParseIntError,
+};
 
-use crate::{Error, FourBitColorType};
+use crate::Error;
 
 /// An ANSI color.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -82,27 +85,33 @@ impl Color {
         })
     }
 
-    pub(crate) fn into_opening_fg_span(self, color_type: &FourBitColorType) -> String {
-        self.into_opening_span(color_type, true)
+    pub(crate) fn into_opening_fg_span(self, var_prefix: &Option<String>) -> String {
+        self.into_opening_span(var_prefix, true)
     }
 
-    pub(crate) fn into_opening_bg_span(self, color_type: &FourBitColorType) -> String {
-        self.into_opening_span(color_type, false)
+    pub(crate) fn into_opening_bg_span(self, var_prefix: &Option<String>) -> String {
+        self.into_opening_span(var_prefix, false)
     }
 
-    pub(crate) fn into_opening_span(self, color_type: &FourBitColorType, is_fg: bool) -> String {
-        if let (Self::FourBit(four_bit), FourBitColorType::Class { prefix }) = (self, color_type) {
-            let mut s = "<span class='".to_owned();
-            if let Some(prefix) = prefix {
+    pub(crate) fn into_opening_span(self, var_prefix: &Option<String>, is_fg: bool) -> String {
+        if let Self::FourBit(four_bit) = self {
+            let mut s = "<span style='".to_owned();
+
+            if is_fg {
+                s.push_str("color");
+            } else {
+                s.push_str("background");
+            }
+
+            s.push_str(":var(--");
+
+            if let Some(prefix) = var_prefix {
                 s.push_str(prefix);
             }
 
-            if is_fg {
-                four_bit.write_fg_class(&mut s);
-            } else {
-                four_bit.write_bg_class(&mut s);
-            }
-            s.push_str("'>");
+            four_bit.write_css_var_name(&mut s);
+
+            write!(s, ",{self})'>").expect("String writing is infallible");
             s
         } else if is_fg {
             format!("<span style='color:{self}'>")
@@ -158,7 +167,7 @@ impl FourBitColor {
         )
     }
 
-    pub(crate) fn write_fg_class(self, s: &mut String) {
+    pub(crate) fn write_css_var_name(self, s: &mut String) {
         if self.is_bright() {
             s.push_str("bright-");
         }
@@ -173,11 +182,6 @@ impl FourBitColor {
             Self::Cyan | Self::BrightCyan => "cyan",
             Self::White | Self::BrightWhite => "white",
         });
-    }
-
-    pub(crate) fn write_bg_class(self, s: &mut String) {
-        s.push_str("bg-");
-        self.write_fg_class(s);
     }
 }
 

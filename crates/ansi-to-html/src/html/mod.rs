@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::{Ansi, AnsiIter, Color, Error, FourBitColorType};
+use crate::{Ansi, AnsiIter, Color, Error};
 
 mod minifier;
 
@@ -16,7 +16,7 @@ enum Style {
 }
 
 impl Style {
-    fn apply(&self, buf: &mut String, color_type: &FourBitColorType) {
+    fn apply(&self, buf: &mut String, var_prefix: &Option<String>) {
         let s;
         buf.push_str(match self {
             Style::Bold => "<b>",
@@ -25,11 +25,11 @@ impl Style {
             Style::Underline => "<u>",
             Style::CrossedOut => "<s>",
             Style::ForegroundColor(c) => {
-                s = c.into_opening_fg_span(color_type);
+                s = c.into_opening_fg_span(var_prefix);
                 &s
             }
             Style::BackgroundColor(c) => {
-                s = c.into_opening_bg_span(color_type);
+                s = c.into_opening_bg_span(var_prefix);
                 &s
             }
         });
@@ -52,9 +52,9 @@ impl Style {
 pub fn ansi_to_html(
     mut input: &str,
     ansi_regex: &Regex,
-    color_type: FourBitColorType,
+    four_bit_var_prefix: Option<String>,
 ) -> Result<String, Error> {
-    let mut minifier = minifier::Minifier::new(color_type);
+    let mut minifier = minifier::Minifier::new(four_bit_var_prefix);
 
     loop {
         match ansi_regex.find(input) {
@@ -100,13 +100,13 @@ struct AnsiConverter {
     styles: Vec<Style>,
     styles_to_apply: Vec<Style>,
     result: String,
-    four_bit: FourBitColorType,
+    four_bit_var_prefix: Option<String>,
 }
 
 impl AnsiConverter {
-    fn new(four_bit: FourBitColorType) -> Self {
+    fn new(four_bit_var_prefix: Option<String>) -> Self {
         Self {
-            four_bit,
+            four_bit_var_prefix,
             ..Self::default()
         }
     }
@@ -138,7 +138,7 @@ impl AnsiConverter {
 
     fn set_style(&mut self, s: Style) {
         if !self.styles.contains(&s) {
-            s.apply(&mut self.result, &self.four_bit);
+            s.apply(&mut self.result, &self.four_bit_var_prefix);
             self.styles.push(s);
         }
     }
@@ -154,7 +154,7 @@ impl AnsiConverter {
             }
         }
         for &style in &self.styles_to_apply {
-            style.apply(&mut self.result, &self.four_bit);
+            style.apply(&mut self.result, &self.four_bit_var_prefix);
             self.styles.push(style);
         }
         self.styles_to_apply.clear();

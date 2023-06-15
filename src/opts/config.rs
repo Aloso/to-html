@@ -47,5 +47,4 @@ pub struct Output {
     pub full_document: bool,
     pub highlight: Vec<String>,
     pub css_prefix: Option<String>,
-    pub color_classes: bool,
 }

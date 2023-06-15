@@ -83,15 +83,12 @@ fn main_inner() -> Result<(), StdError> {
 fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdError> {
     fmt_command_prompt(buf, command, opts)?;
 
-    let mut convert_opts = ansi_to_html::Opts::default();
-    if opts.color_classes {
-        let color_type = if opts.prefix.is_empty() {
-            ansi_to_html::FourBitColorType::class()
-        } else {
-            ansi_to_html::FourBitColorType::class_with_prefix(&opts.prefix)
-        };
-        convert_opts = convert_opts.four_bit_color_type(color_type);
-    }
+    let var_prefix = if opts.prefix.is_empty() {
+        None
+    } else {
+        Some(opts.prefix.to_owned())
+    };
+    let convert_opts = ansi_to_html::Opts::default().four_bit_var_prefix(var_prefix);
 
     let (cmd_out, cmd_err, _) = cmd::run(command, opts.shell.as_deref())?;
     if !cmd_out.is_empty() {

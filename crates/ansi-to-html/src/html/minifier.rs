@@ -1,4 +1,4 @@
-use crate::{html::AnsiConverter, Ansi, Color, FourBitColorType};
+use crate::{html::AnsiConverter, Ansi, Color};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct CurrentStyling {
@@ -51,9 +51,9 @@ pub(crate) struct Minifier {
 }
 
 impl Minifier {
-    pub fn new(color_type: FourBitColorType) -> Self {
+    pub fn new(var_prefix: Option<String>) -> Self {
         Self {
-            converter: AnsiConverter::new(color_type),
+            converter: AnsiConverter::new(var_prefix),
             ..Self::default()
         }
     }
