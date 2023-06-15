@@ -50,13 +50,6 @@ By default, to-html only displays an arrow (`>`) as prompt. To display the curre
 to-html -c "cd .." "ls"
 ```
 
-By default, to-html will use hardcoded colors for all the ANSI colors. To use
-configurable classes for 4-bit colors instead, pass `--color-classes`:
-
-```bash
-to-html --color-classes ls --color
-```
-
 Example output:
 
 <pre>
