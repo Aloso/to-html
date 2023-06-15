@@ -16,7 +16,7 @@ enum Style {
 }
 
 impl Style {
-    fn apply(&self, buf: &mut String, var_prefix: &Option<String>) {
+    fn apply(&self, buf: &mut String, var_prefix: Option<&str>) {
         let s;
         buf.push_str(match self {
             Style::Bold => "<b>",
@@ -138,7 +138,7 @@ impl AnsiConverter {
 
     fn set_style(&mut self, s: Style) {
         if !self.styles.contains(&s) {
-            s.apply(&mut self.result, &self.four_bit_var_prefix);
+            s.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
             self.styles.push(s);
         }
     }
@@ -154,7 +154,7 @@ impl AnsiConverter {
             }
         }
         for &style in &self.styles_to_apply {
-            style.apply(&mut self.result, &self.four_bit_var_prefix);
+            style.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
             self.styles.push(style);
         }
         self.styles_to_apply.clear();

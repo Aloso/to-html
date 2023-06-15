@@ -51,7 +51,7 @@ pub(crate) struct Minifier {
 }
 
 impl Minifier {
-    pub fn new(var_prefix: Option<String>) -> Self {
+    pub(crate) fn new(var_prefix: Option<String>) -> Self {
         Self {
             converter: AnsiConverter::new(var_prefix),
             ..Self::default()
