@@ -51,6 +51,13 @@ pub(crate) struct Minifier {
 }
 
 impl Minifier {
+    pub(crate) fn new(var_prefix: Option<String>) -> Self {
+        Self {
+            converter: AnsiConverter::new(var_prefix),
+            ..Self::default()
+        }
+    }
+
     pub fn clear_styles(&mut self) {
         self.push_ansi_code(Ansi::Reset);
     }

@@ -74,17 +74,17 @@ fn ariadne() {
 
     let styled = human_readable_to_ansi(readable.trim());
 
-    let converted = ansi_to_html::convert_escaped(&styled).unwrap();
+    let converted = ansi_to_html::convert(&styled).unwrap();
     insta::assert_snapshot!(converted, @r###"
-    <span style='color:#a00'>Error:</span> Incompatible types
+    <span style='color:var(--red,#a00)'>Error:</span> Incompatible types
        <span style='color:#949494'>,-[</span>&lt;unknown&gt;:2:9<span style='color:#949494'>]</span>
        <span style='color:#949494'>|</span>
-     <span style='color:#949494'>2 |</span> <span style='color:#b2b2b2'>    () =&gt; </span><span style='color:#0aa'>5</span><span style='color:#b2b2b2'>,</span>
-     <span style='color:#585858'>  |</span>           <span style='color:#0aa'>|</span>
-     <span style='color:#585858'>  |</span>           <span style='color:#0aa'>`--</span> This is of type Nat
-     <span style='color:#949494'>3 |</span> <span style='color:#b2b2b2'>    () =&gt; </span><span style='color:#00a'>&quot;5&quot;</span><span style='color:#b2b2b2'>,</span>
-     <span style='color:#585858'>  |</span>           <span style='color:#00a'>^|^</span>
-     <span style='color:#585858'>  |</span>            <span style='color:#00a'>`---</span> This is of type Str
+     <span style='color:#949494'>2 |</span> <span style='color:#b2b2b2'>    () =&gt; </span><span style='color:var(--cyan,#0aa)'>5</span><span style='color:#b2b2b2'>,</span>
+     <span style='color:#585858'>  |</span>           <span style='color:var(--cyan,#0aa)'>|</span>
+     <span style='color:#585858'>  |</span>           <span style='color:var(--cyan,#0aa)'>`--</span> This is of type Nat
+     <span style='color:#949494'>3 |</span> <span style='color:#b2b2b2'>    () =&gt; </span><span style='color:var(--blue,#00a)'>&quot;5&quot;</span><span style='color:#b2b2b2'>,</span>
+     <span style='color:#585858'>  |</span>           <span style='color:var(--blue,#00a)'>^|^</span>
+     <span style='color:#585858'>  |</span>            <span style='color:var(--blue,#00a)'>`---</span> This is of type Str
     <span style='color:#949494'>---&#39;</span>
     "###);
 }

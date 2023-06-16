@@ -81,6 +81,26 @@ impl Color {
             }
         })
     }
+
+    pub(crate) fn into_opening_fg_span(self, var_prefix: Option<&str>) -> String {
+        self.into_opening_span(var_prefix, true)
+    }
+
+    pub(crate) fn into_opening_bg_span(self, var_prefix: Option<&str>) -> String {
+        self.into_opening_span(var_prefix, false)
+    }
+
+    pub(crate) fn into_opening_span(self, var_prefix: Option<&str>, is_fg: bool) -> String {
+        if let Self::FourBit(four_bit) = self {
+            let fg_vs_bg = if is_fg { "color" } else { "background" };
+            let prefix = var_prefix.unwrap_or_default();
+            format!("<span style='{fg_vs_bg}:var(--{prefix}{four_bit},{self})'>")
+        } else if is_fg {
+            format!("<span style='color:{self}'>")
+        } else {
+            format!("<span style='background:{self}'>")
+        }
+    }
 }
 
 impl fmt::Display for Color {
@@ -112,6 +132,41 @@ pub(crate) enum FourBitColor {
     BrightMagenta,
     BrightCyan,
     BrightWhite,
+}
+
+impl fmt::Display for FourBitColor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.is_bright() {
+            f.write_str("bright-")?;
+        }
+
+        f.write_str(match self {
+            Self::Black | Self::BrightBlack => "black",
+            Self::Red | Self::BrightRed => "red",
+            Self::Green | Self::BrightGreen => "green",
+            Self::Yellow | Self::BrightYellow => "yellow",
+            Self::Blue | Self::BrightBlue => "blue",
+            Self::Magenta | Self::BrightMagenta => "magenta",
+            Self::Cyan | Self::BrightCyan => "cyan",
+            Self::White | Self::BrightWhite => "white",
+        })
+    }
+}
+
+impl FourBitColor {
+    pub(crate) fn is_bright(self) -> bool {
+        matches!(
+            self,
+            Self::BrightBlack
+                | Self::BrightRed
+                | Self::BrightGreen
+                | Self::BrightYellow
+                | Self::BrightBlue
+                | Self::BrightMagenta
+                | Self::BrightCyan
+                | Self::BrightWhite,
+        )
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

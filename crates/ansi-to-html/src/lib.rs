@@ -37,12 +37,13 @@
 //!
 //! ## Example
 //! ```
-//! // \x1b[1m : bold   \x1b[31m : red
-//! let input = "<h1> \x1b[1m Hello \x1b[31m world! </h1>";
-//! let converted = ansi_to_html::convert_escaped(input).unwrap();
+//! let bold = "\x1b[1m";
+//! let red = "\x1b[31m";
+//! let input = format!("<h1> {bold}Hello {red}world! </h1>");
+//! let converted = ansi_to_html::convert(&input).unwrap();
 //! assert_eq!(
-//!     converted.as_str(),
-//!     "&lt;h1&gt; <b> Hello <span style='color:#a00'> world! &lt;/h1&gt;</span></b>"
+//!     converted,
+//!     "&lt;h1&gt; <b>Hello <span style='color:var(--red,#a00)'>world! &lt;/h1&gt;</span></b>"
 //! );
 //! ```
 //!
@@ -69,6 +70,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 
 /// Converts a string containing ANSI escape codes to HTML.
+///
 /// Special html characters (`<>&'"`) are escaped prior to the conversion.
 ///
 /// This function attempts to minimize the number of generated HTML tags.
@@ -76,22 +78,55 @@ use regex::Regex;
 /// ## Example
 ///
 /// ```
-/// // \x1b[1m : bold   \x1b[31m : red
-/// let input = "<h1> \x1b[1m Hello \x1b[31m world! </h1>";
-/// let converted = ansi_to_html::convert_escaped(input).unwrap();
+/// let bold = "\x1b[1m";
+/// let red = "\x1b[31m";
+/// let input = format!("<h1> {bold}Hello {red}world! </h1>");
+/// let converted = ansi_to_html::convert(&input).unwrap();
 ///
 /// assert_eq!(
-///     converted.as_str(),
-///     "&lt;h1&gt; <b> Hello <span style='color:#a00'> world! &lt;/h1&gt;</span></b>"
+///     converted,
+///     "&lt;h1&gt; <b>Hello <span style='color:var(--red,#a00)'>world! &lt;/h1&gt;</span></b>",
 /// );
 /// ```
-pub fn convert_escaped(ansi_string: &str) -> Result<String, Error> {
-    let input = Esc(ansi_string).to_string();
-    let html = html::ansi_to_html(&input, &ansi_regex())?;
-    Ok(optimize(&html))
+pub fn convert(ansi_string: &str) -> Result<String, Error> {
+    convert_with_opts(ansi_string, &Opts::default())
 }
 
-/// Converts a string containing ANSI escape codes to HTML.
+/// Customizes the behavior of [`convert_with_opts()`]
+///
+/// By default this will:
+///
+/// - Escape special HTML characters (`<>&'"`) prior to conversion.
+/// - Optimizes to minimize the number of generated HTML tags.
+/// - Uses hardcoded colors.
+#[derive(Clone, Debug, Default)]
+pub struct Opts {
+    skip_escape: bool,
+    skip_optimize: bool,
+    four_bit_var_prefix: Option<String>,
+}
+
+impl Opts {
+    /// Avoids escaping special HTML characters prior to conversion.
+    pub fn skip_escape(mut self, skip: bool) -> Self {
+        self.skip_escape = skip;
+        self
+    }
+
+    /// Skips removing some useless HTML tags.
+    pub fn skip_optimize(mut self, skip: bool) -> Self {
+        self.skip_optimize = skip;
+        self
+    }
+
+    /// Adds a custom prefix for the CSS variables used for all the 4-bit colors.
+    pub fn four_bit_var_prefix(mut self, prefix: Option<String>) -> Self {
+        self.four_bit_var_prefix = prefix;
+        self
+    }
+}
+
+/// Converts a string containing ANSI escape codes to HTML with customized behavior.
 ///
 /// If `escaped` is `true`, then special html characters (`<>&'"`) are escaped prior
 /// to the conversion.
@@ -102,24 +137,45 @@ pub fn convert_escaped(ansi_string: &str) -> Result<String, Error> {
 /// ## Example
 ///
 /// ```
-/// // \x1b[1m : bold   \x1b[31m : red   \x1b[22m : bold off
-/// let input = "\x1b[1m Hello \x1b[31m world \x1b[22m!";
-/// let converted = ansi_to_html::convert_escaped(input).unwrap();
+/// use ansi_to_html::{convert_with_opts, Opts};
+///
+/// let opts = Opts::default()
+///     .skip_escape(true)
+///     .skip_optimize(true)
+///     .four_bit_var_prefix(Some("custom-".to_owned()));
+/// let bold = "\x1b[1m";
+/// let red = "\x1b[31m";
+/// let reset = "\x1b[0m";
+/// let input = format!("<h1> <i></i> {bold}Hello {red}world!{reset} </h1>");
+/// let converted = convert_with_opts(&input, &opts).unwrap();
 ///
 /// assert_eq!(
-///     converted.as_str(),
-///     "<b> Hello <span style='color:#a00'> world </span></b><span style='color:#a00'>!</span>"
+///     converted,
+///     // The `<h1>` and `</h1>` aren't escaped, useless `<i></i>` is kept, and
+///     // `<span class='red'>` is used instead of `<span style='color:#a00'>`
+///     "<h1> <i></i> <b>Hello <span style='color:var(--custom-red,#a00)'>world!</span></b> </h1>",
 /// );
 /// ```
-pub fn convert(input: &str, escaped: bool, optimized: bool) -> Result<String, Error> {
-    let html = if escaped {
-        let input = Esc(input).to_string();
-        html::ansi_to_html(&input, &ansi_regex())?
+pub fn convert_with_opts(input: &str, opts: &Opts) -> Result<String, Error> {
+    let Opts {
+        skip_escape,
+        skip_optimize,
+        four_bit_var_prefix,
+    } = opts;
+
+    let html = if *skip_escape {
+        html::ansi_to_html(input, &ansi_regex(), four_bit_var_prefix.to_owned())?
     } else {
-        html::ansi_to_html(input, &ansi_regex())?
+        let input = Esc(input).to_string();
+        html::ansi_to_html(&input, &ansi_regex(), four_bit_var_prefix.to_owned())?
     };
 
-    let html = if optimized { optimize(&html) } else { html };
+    let html = if *skip_optimize {
+        html
+    } else {
+        optimize(&html)
+    };
+
     Ok(html)
 }
 
