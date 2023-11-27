@@ -42,4 +42,7 @@ pub struct Cli {
     /// Output a complete HTML document, not just a `<pre>`
     #[arg(short, long)]
     pub doc: bool,
+    /// Do not show the command prompt
+    #[arg(short = 'H', long)]
+    pub hide_prompt: bool,
 }
