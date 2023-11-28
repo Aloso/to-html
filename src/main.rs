@@ -65,7 +65,7 @@ fn main_inner() -> Result<(), StdError> {
         }
     }
 
-    if !opts.no_run {
+    if !opts.no_run && !opts.no_prompt {
         shell_prompt(&mut buf, &opts)?;
         writeln!(buf, "<span class='{p}caret'> </span>", p = opts.prefix)?;
     }
