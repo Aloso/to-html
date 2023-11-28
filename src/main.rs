@@ -81,7 +81,7 @@ fn main_inner() -> Result<(), StdError> {
 }
 
 fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdError> {
-    if !opts.hide_prompt {
+    if !opts.no_prompt {
         fmt_command_prompt(buf, command, opts)?;
     }
 

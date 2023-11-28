@@ -34,7 +34,7 @@ pub struct Cli {
     #[arg(short, long)]
     pub prefix: Option<String>,
     /// Don't run the commands, just emit the HTML for the command prompt
-    #[arg(short, long)]
+    #[arg(short, long, group = "no_prompt_or_run")]
     pub no_run: bool,
     /// Print the (abbreviated) current working directory in the command prompt
     #[arg(short, long)]
@@ -43,6 +43,6 @@ pub struct Cli {
     #[arg(short, long)]
     pub doc: bool,
     /// Do not show the command prompt
-    #[arg(short = 'H', long)]
-    pub hide_prompt: bool,
+    #[arg(short = 'H', long, group = "no_prompt_or_run")]
+    pub no_prompt: bool,
 }
