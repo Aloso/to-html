@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2023-11-30
+
+- [`#19`](https://github.com/Aloso/to-html/pull/19): Make `to-html` configurable with a config file located in
+  the proper location depending on the OS (@CosmicHorrorDev)
+
+  - Linux: `$XDG_CONFIG_HOME/to-html/config.toml` or `$HOME/.config/to-html/config.toml`
+  - macOS: `$HOME/Library/Application Support/to-html/config.toml`
+  - Windows: `{FOLDERID_RoamingAppData}/to-html/config.toml`
+
+  An example configuration file is [here](/config.toml.sample).
+
+- [`#22`](https://github.com/Aloso/to-html/pull/22): Add shell completions to release builds (@CosmicHorrorDev)
+
+- [`#25`](https://github.com/Aloso/to-html/pull/25): Make terminal colors configurable via CSS classes
+  (e.g. `--red`, `--bright-green`) (@CosmicHorrorDev)
+
+- [`#28`](https://github.com/Aloso/to-html/pull/28): Add `--hide-prompt` flag to print the command output
+  without the prompt (@Julian-Alberts)
+
+- fix ([`0a5fcbb`](https://github.com/Aloso/to-html/commit/0a5fcbbfae27d13d51ebeca3c14915656bdf73c1)):
+  Correctly parse backslash escapes like `\n` (@Aloso)
+
 ## [0.1.4] - 2023-03-29
 
 - [`#18`](https://github.com/Aloso/to-html/pull/18): Minify output with redundant ANSI escape better (@CosmicHorrorDev)

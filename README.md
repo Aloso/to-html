@@ -122,6 +122,15 @@ Include this on your website to get syntax highlighting for the prompt:
 
 </details>
 
+The default terminal colors can be overridden with CSS classes, for example:
+
+```css
+.terminal {
+  --red: #f44;
+  --bright-red: #f88;
+}
+```
+
 ## Demonstration 📸
 
 ```bash
