@@ -10,9 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [`#19`](https://github.com/Aloso/to-html/pull/19): Make `to-html` configurable with a config file located in
   the proper location depending on the OS (@CosmicHorrorDev)
 
-  - Linux: `$XDG_CONFIG_HOME/to-html/config.toml` or `$HOME/.config/to-html/config.toml`
+  - Linux: `$XDG_CONFIG_HOME/to-html/config.toml` or `~/.config/to-html/config.toml`
   - macOS: `$HOME/Library/Application Support/to-html/config.toml`
-  - Windows: `{FOLDERID_RoamingAppData}/to-html/config.toml`
 
   An example configuration file is [here](/config.toml.sample).
 
