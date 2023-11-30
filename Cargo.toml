@@ -1,6 +1,6 @@
 [package]
 name = "to-html"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 description = "Render a terminal with ANSI colors as HTML"
 categories = ["command-line-utilities"]
@@ -20,7 +20,7 @@ members = ["crates/*"]
 
 [dependencies]
 fake-tty = { path = "./crates/fake-tty", version = "0.3.1" }
-ansi-to-html = { path = "./crates/ansi-to-html", version = "0.2.0" }
+ansi-to-html = { path = "./crates/ansi-to-html", version = "0.2.1" }
 clap = { version = "4.1.10", features = ["derive", "wrap_help"] }
 dirs-next = "2.0.0"
 logos = "0.12.1"
