@@ -22,6 +22,7 @@ pub struct Opts {
     pub no_run: bool,
     pub prompt: ShellPrompt,
     pub doc: bool,
+    pub no_prompt: bool,
 }
 
 impl Opts {
@@ -47,6 +48,7 @@ impl Opts {
             no_run: cli_no_run,
             cwd: cli_cwd,
             doc: cli_doc,
+            no_prompt: cli_no_prompt,
         } = cli::parse();
 
         let prompt = if cli_cwd || config_cwd {
@@ -69,6 +71,7 @@ impl Opts {
             no_run: cli_no_run,
             prompt,
             doc: cli_doc || config_doc,
+            no_prompt: cli_no_prompt,
         })
     }
 }
