@@ -26,7 +26,7 @@ clap = { version = "4.1.10", features = ["derive", "wrap_help"] }
 dirs-next = "2.0.0"
 logos = "0.13.0"
 serde = { version = "1.0.159", features = ["derive"] }
-basic-toml = "0.1.2"
+toml = "0.8.8"
 thiserror = "1.0.40"
 
 [build-dependencies]
