@@ -208,9 +208,6 @@ pub(crate) enum TokenKind {
     #[regex(r"\$[\d#\-\$*?!@]|\$[\w_][\w\d_]*")]
     #[regex(r#"\$\{(\\\\|\\\}|[^\\}])*\}"#)]
     Variable,
-
-    #[error]
-    Error,
 }
 
 #[derive(Logos, Debug, PartialEq, Copy, Clone)]
@@ -233,18 +230,12 @@ pub(crate) enum DStringTokenKind {
     #[regex(r#"[^\\\$`"]+"#, priority = 1)]
     #[token("$", priority = 2)]
     Content,
-
-    #[error]
-    Error,
 }
 
 #[derive(Logos, Debug, PartialEq, Copy, Clone)]
 pub(crate) enum HeredocTokenKind {
     #[regex("[^\n]+\n?", priority = 1)]
     Line,
-
-    #[error]
-    Error,
 }
 
 impl Tokens<'_> {
@@ -299,6 +290,10 @@ pub(crate) fn parse_tokens(
     let mut tokens = Vec::new();
 
     while let Some(token) = lex.next() {
+        let Ok(token) = token else {
+            return Err(Error::Unknown);
+        };
+
         if until(&token) {
             break;
         }
@@ -393,7 +388,6 @@ pub(crate) fn parse_tokens(
             TokenKind::Variable => {
                 tokens.push(Token::Variable(lex.slice()));
             }
-            TokenKind::Error => return Err(Error::Unknown),
         }
     }
 
@@ -405,6 +399,10 @@ fn parse_d_string(
 ) -> Result<(DString, Lexer<DStringTokenKind>), Error> {
     let mut tokens = Vec::new();
     while let Some(token) = lex.next() {
+        let Ok(token) = token else {
+            return Err(Error::Unknown);
+        };
+
         match token {
             DStringTokenKind::DoubleQuote => {
                 break;
@@ -428,7 +426,6 @@ fn parse_d_string(
             DStringTokenKind::Content => {
                 tokens.push(DStringToken::Content(lex.slice()));
             }
-            DStringTokenKind::Error => return Err(Error::Unknown),
         }
     }
 

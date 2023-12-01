@@ -12,6 +12,7 @@ edition = "2021"
 license = "MIT"
 keywords = ["color", "cli", "terminal", "html"]
 exclude = ["docs"]
+resolver = "2"
 
 [workspace]
 members = ["crates/*"]
@@ -23,7 +24,7 @@ fake-tty = { path = "./crates/fake-tty", version = "0.3.1" }
 ansi-to-html = { path = "./crates/ansi-to-html", version = "0.2.1" }
 clap = { version = "4.1.10", features = ["derive", "wrap_help"] }
 dirs-next = "2.0.0"
-logos = "0.12.1"
+logos = "0.13.0"
 serde = { version = "1.0.159", features = ["derive"] }
 basic-toml = "0.1.2"
 thiserror = "1.0.40"
@@ -37,3 +38,4 @@ opt-level = 1
 
 [profile.release]
 lto = "thin"
+strip = true
