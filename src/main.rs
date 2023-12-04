@@ -4,6 +4,7 @@ use std::{borrow::Cow, error, fmt::Write};
 pub mod cmd;
 mod lexer;
 mod opts;
+mod process;
 
 use opts::{Opts, ShellPrompt};
 
@@ -92,7 +93,18 @@ fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdEr
     };
     let convert_opts = ansi_to_html::Opts::default().four_bit_var_prefix(var_prefix);
 
-    let (cmd_out, cmd_err, _) = cmd::run(command, opts.shell.as_deref())?;
+    let mut cmd = String::new();
+    let shell = opts.shell.as_deref().or_else(|| {
+        cmd = process::get_ancestor_process_cmd(1)?;
+        Some(cmd.as_str()).filter(|&n| {
+            matches!(
+                n.rsplit('/').next(),
+                Some("bash" | "sh" | "fish" | "zsh" | "csh" | "ksh" | "elvish")
+            )
+        })
+    });
+
+    let (cmd_out, cmd_err, _) = cmd::run(command, shell)?;
     if !cmd_out.is_empty() {
         let html = ansi_to_html::convert_with_opts(&cmd_out, &convert_opts)?;
         write!(buf, "{}", html)?;

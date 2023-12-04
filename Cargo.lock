@@ -516,6 +516,7 @@ dependencies = [
  "clap_complete",
  "dirs-next",
  "fake-tty",
+ "libc",
  "logos",
  "serde",
  "thiserror",

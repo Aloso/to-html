@@ -28,6 +28,7 @@ logos = "0.13.0"
 serde = { version = "1.0.159", features = ["derive"] }
 toml = "0.8.8"
 thiserror = "1.0.40"
+libc = "0.2"
 
 [build-dependencies]
 clap = { version = "4.1.10", features = ["derive"] }
