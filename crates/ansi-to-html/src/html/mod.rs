@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::{Ansi, AnsiIter, Color, Error};
+use crate::{color::FourBitColor, Ansi, AnsiIter, Color, Error};
 
 mod minifier;
 
@@ -101,6 +101,7 @@ struct AnsiConverter {
     styles_to_apply: Vec<Style>,
     result: String,
     four_bit_var_prefix: Option<String>,
+    inverted: bool,
 }
 
 impl AnsiConverter {
@@ -114,16 +115,29 @@ impl AnsiConverter {
     fn consume_ansi_code(&mut self, ansi: Ansi) {
         match ansi {
             Ansi::Noop => {}
-            Ansi::Reset => self.clear_style(|_| true),
+            Ansi::Reset => {
+                self.clear_style(|_| true);
+                self.inverted = false;
+            }
             Ansi::Bold => self.set_style(Style::Bold),
             Ansi::Faint => self.set_style(Style::Faint),
             Ansi::Italic => self.set_style(Style::Italic),
+            Ansi::Invert if self.inverted => {}
+            Ansi::Invert => {
+                self.inverted = true;
+                self.invert_fg_bg(FourBitColor::White.into(), FourBitColor::Black.into());
+            }
             Ansi::Underline => self.set_style(Style::Underline),
             Ansi::CrossedOut => self.set_style(Style::CrossedOut),
             Ansi::BoldOff => self.clear_style(|&s| s == Style::Bold),
             Ansi::BoldAndFaintOff => self.clear_style(|&s| s == Style::Bold || s == Style::Faint),
             Ansi::ItalicOff => self.clear_style(|&s| s == Style::Italic),
             Ansi::UnderlineOff => self.clear_style(|&s| s == Style::Underline),
+            Ansi::InvertOff if !self.inverted => {}
+            Ansi::InvertOff => {
+                self.inverted = false;
+                self.invert_fg_bg(FourBitColor::Black.into(), FourBitColor::White.into());
+            }
             Ansi::CrossedOutOff => self.clear_style(|&s| s == Style::CrossedOut),
             Ansi::ForgroundColor(c) => self.set_style(Style::ForegroundColor(c)),
             Ansi::DefaultForegroundColor => {
@@ -134,6 +148,27 @@ impl AnsiConverter {
                 self.clear_style(|&s| matches!(s, Style::BackgroundColor(_)))
             }
         }
+    }
+
+    fn invert_fg_bg(&mut self, default_fg: Color, default_bg: Color) {
+        let mut new_fg = None;
+        let mut new_bg = None;
+        for style in self.styles.iter().rev() {
+            match (style, new_fg, new_bg) {
+                (_, Some(_), Some(_)) => break,
+                (Style::ForegroundColor(fg), None, _) => new_bg = Some(*fg),
+                (Style::BackgroundColor(bg), _, None) => new_fg = Some(*bg),
+                _ => {}
+            }
+        }
+
+        // Default the inverted fg/bg if missing
+        let new_fg = new_fg.unwrap_or(default_fg);
+        let new_bg = new_bg.unwrap_or(default_bg);
+
+        // Actually swap them
+        self.set_style(Style::ForegroundColor(new_fg));
+        self.set_style(Style::BackgroundColor(new_bg));
     }
 
     fn set_style(&mut self, s: Style) {

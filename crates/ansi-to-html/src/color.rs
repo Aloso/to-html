@@ -113,6 +113,24 @@ impl fmt::Display for Color {
     }
 }
 
+impl From<FourBitColor> for Color {
+    fn from(four_bit: FourBitColor) -> Self {
+        Self::FourBit(four_bit)
+    }
+}
+
+impl From<EightBitColor> for Color {
+    fn from(eight_bit: EightBitColor) -> Self {
+        Self::EightBit(eight_bit)
+    }
+}
+
+impl From<RgbColor> for Color {
+    fn from(rgb: RgbColor) -> Self {
+        Self::Rgb(rgb)
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(u8)]
 pub(crate) enum FourBitColor {

@@ -1,4 +1,4 @@
-use crate::{html::AnsiConverter, Ansi, Color};
+use crate::{color::FourBitColor, html::AnsiConverter, Ansi, Color};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct CurrentStyling {
@@ -9,6 +9,7 @@ struct CurrentStyling {
     italic: bool,
     underline: bool,
     crossed_out: bool,
+    inverted: bool,
 }
 
 impl CurrentStyling {
@@ -20,6 +21,11 @@ impl CurrentStyling {
             Ansi::Faint => self.faint = true,
             Ansi::Italic => self.italic = true,
             Ansi::Underline => self.underline = true,
+            Ansi::Invert if self.inverted => {}
+            Ansi::Invert => {
+                self.inverted = true;
+                self.invert_fg_bg(FourBitColor::White.into(), FourBitColor::Black.into());
+            }
             Ansi::CrossedOut => self.crossed_out = true,
             Ansi::BoldOff => self.bold = false,
             Ansi::BoldAndFaintOff => {
@@ -28,12 +34,24 @@ impl CurrentStyling {
             }
             Ansi::ItalicOff => self.italic = false,
             Ansi::UnderlineOff => self.underline = false,
+            Ansi::InvertOff if !self.inverted => {}
+            Ansi::InvertOff => {
+                self.inverted = false;
+                self.invert_fg_bg(FourBitColor::Black.into(), FourBitColor::White.into());
+            }
             Ansi::CrossedOutOff => self.crossed_out = false,
             Ansi::ForgroundColor(c) => self.fg = Some(c),
             Ansi::DefaultForegroundColor => self.fg = None,
             Ansi::BackgroundColor(c) => self.bg = Some(c),
             Ansi::DefaultBackgroundColor => self.bg = None,
         }
+    }
+
+    fn invert_fg_bg(&mut self, default_fg: Color, default_bg: Color) {
+        let new_fg = self.bg.unwrap_or(default_fg);
+        let new_bg = self.fg.unwrap_or(default_bg);
+        self.fg = Some(new_fg);
+        self.bg = Some(new_bg);
     }
 }
 
