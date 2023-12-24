@@ -17,6 +17,8 @@ fn human_readable_to_ansi(s: &str) -> String {
             out.push_str("\x1b[");
             match inner {
                 // Control
+                "inv" => out.push('7'),
+                "inv_off" => out.push_str("27"),
                 "res" => out.push('0'),
                 // Basic colors
                 "blue" => out.push_str("34"),
@@ -41,6 +43,11 @@ fn human_readable_to_ansi(s: &str) -> String {
     }
 
     out
+}
+
+fn human_readable_to_html(readable: &str) -> String {
+    let styled = human_readable_to_ansi(readable);
+    ansi_to_html::convert(&styled).unwrap()
 }
 
 // `ariadne`, at least at the time of writing, has the bad habit of inserting a lot of redundant
@@ -71,10 +78,8 @@ fn ariadne() {
  {{ 8_240 }}  |{{ res }}            {{ blue }}`{{ res }}{{ blue }}-{{ res }}{{ blue }}-{{ res }}{{ blue }}-{{ res }} This is of type Str
 {{ 8_246 }}---'{{ res }}
     "#;
+    let converted = human_readable_to_html(readable.trim());
 
-    let styled = human_readable_to_ansi(readable.trim());
-
-    let converted = ansi_to_html::convert(&styled).unwrap();
     insta::assert_snapshot!(converted, @r###"
     <span style='color:var(--red,#a00)'>Error:</span> Incompatible types
        <span style='color:#949494'>,-[</span>&lt;unknown&gt;:2:9<span style='color:#949494'>]</span>
@@ -86,5 +91,43 @@ fn ariadne() {
      <span style='color:#585858'>  |</span>           <span style='color:var(--blue,#00a)'>^|^</span>
      <span style='color:#585858'>  |</span>            <span style='color:var(--blue,#00a)'>`---</span> This is of type Str
     <span style='color:#949494'>---&#39;</span>
+    "###);
+}
+
+#[test]
+fn invert_ansi_code() {
+    let readable = r#"
+Useless codes are minified away:
+{{ inv }}{{ inv_off }}{{ res }}
+No existing color will set fg and bg:
+{{ inv }}White fg black bg{{ res }}
+Multiple inverts is a noop:
+{{ inv }}{{ inv }}Still white fg black bg{{ res }}
+Invert works with custom colors:
+{{ red }}Red on white {{ inv }}White on red{{ res }}
+Invert off does nothing by itself:
+{{ inv_off }}Plain
+Invert off disables invert:
+{{ inv }}White on black {{ inv_off }}Black on white{{ res }}
+Multiple invert offs count as one:
+{{ inv }}Inverted {{ inv_off }}{{ inv_off }}Non-Inverted{{ res }}
+    "#;
+
+    let converted = human_readable_to_html(readable.trim());
+    insta::assert_snapshot!(converted, @r###"
+    Useless codes are minified away:
+
+    No existing color will set fg and bg:
+    <span style='color:var(--white,#aaa)'><span style='background:var(--black,#000)'>White fg black bg</span></span>
+    Multiple inverts is a noop:
+    <span style='color:var(--white,#aaa)'><span style='background:var(--black,#000)'>Still white fg black bg</span></span>
+    Invert works with custom colors:
+    <span style='color:var(--red,#a00)'>Red on white <span style='color:var(--white,#aaa)'><span style='background:var(--red,#a00)'>White on red</span></span></span>
+    Invert off does nothing by itself:
+    Plain
+    Invert off disables invert:
+    <span style='color:var(--white,#aaa)'><span style='background:var(--black,#000)'>White on black <span style='color:var(--black,#000)'><span style='background:var(--white,#aaa)'>Black on white</span></span></span></span>
+    Multiple invert offs count as one:
+    <span style='color:var(--white,#aaa)'><span style='background:var(--black,#000)'>Inverted <span style='color:var(--black,#000)'><span style='background:var(--white,#aaa)'>Non-Inverted</span></span></span></span>
     "###);
 }
