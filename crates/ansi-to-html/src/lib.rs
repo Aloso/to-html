@@ -8,6 +8,7 @@
 //! - italic
 //! - underlined
 //! - crossed out
+//! - reverse video
 //! - faint
 //! - foreground and background colors: 3-bit, 4-bit, 8-bit, truecolor (24-bit)
 //!
@@ -15,7 +16,6 @@
 //! and rarely supported by terminals):
 //!
 //! - slow/rapid blink
-//! - reverse video
 //! - conceal
 //! - alternative fonts
 //! - fraktur
