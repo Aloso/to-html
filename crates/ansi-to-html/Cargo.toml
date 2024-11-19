@@ -12,16 +12,14 @@ edition = "2021"
 license = "MIT"
 keywords = ["color", "cli", "terminal", "html"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 regex = "1.7.3"
 thiserror = "1.0.40"
-once_cell = { version = "1.17.1", optional = true }
 
 [features]
 default = []
-lazy-init = ["once_cell"]
+# A now unused feature that will be removed in a future release
+lazy-init = []
 
 [dev-dependencies]
 insta = "1.29.0"

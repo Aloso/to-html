@@ -53,6 +53,8 @@
 //! converting many strings.
 #![deny(unsafe_code)]
 
+use std::sync::OnceLock;
+
 mod ansi;
 mod color;
 mod error;
@@ -65,8 +67,6 @@ use color::Color;
 pub use error::Error;
 pub use esc::Esc;
 
-#[cfg(feature = "once_cell")]
-use once_cell::sync::Lazy;
 use regex::Regex;
 
 /// Converts a string containing ANSI escape codes to HTML.
@@ -183,34 +183,19 @@ const ANSI_REGEX: &str = r"\u{1b}(\[[0-9;?]*[A-HJKSTfhilmnsu]|\(B)";
 const OPT_REGEX_1: &str = r"<span \w+='[^']*'></span>|<b></b>|<i></i>|<u></u>|<s></s>";
 const OPT_REGEX_2: &str = "</b><b>|</i><i>|</u><u>|</s><s>";
 
-#[cfg(not(feature = "once_cell"))]
-fn ansi_regex() -> Regex {
-    Regex::new(ANSI_REGEX).unwrap()
-}
-
-#[cfg(feature = "once_cell")]
 fn ansi_regex() -> &'static Regex {
-    static REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(ANSI_REGEX).unwrap());
-    &*REGEX
+    static REGEX: OnceLock<Regex> = OnceLock::new();
+    REGEX.get_or_init(|| Regex::new(ANSI_REGEX).unwrap())
 }
 
-#[cfg(not(feature = "once_cell"))]
 fn optimize(html: &str) -> String {
-    let html = Regex::new(OPT_REGEX_1).unwrap().replace_all(html, "");
-    let html = Regex::new(OPT_REGEX_2).unwrap().replace_all(&html, "");
-
-    html.to_string()
-}
-
-#[cfg(feature = "once_cell")]
-fn optimize(html: &str) -> String {
-    static REGEXES: Lazy<(Regex, Regex)> = Lazy::new(|| {
+    static REGEXES: OnceLock<(Regex, Regex)> = OnceLock::new();
+    let (regex1, regex2) = REGEXES.get_or_init(|| {
         (
             Regex::new(OPT_REGEX_1).unwrap(),
             Regex::new(OPT_REGEX_2).unwrap(),
         )
     });
-    let (regex1, regex2) = &*REGEXES;
 
     let html = regex1.replace_all(html, "");
     let html = regex2.replace_all(&html, "");
