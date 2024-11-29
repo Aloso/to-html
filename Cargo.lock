@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "ansi-to-html"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "insta",
  "regex",
@@ -492,7 +492,7 @@ dependencies = [
 
 [[package]]
 name = "to-html"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "ansi-to-html",
  "clap",

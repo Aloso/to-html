@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2024-11-29
+
+- [`#34`](https://github.com/Aloso/to-html/pull/34): Allows for a single optional semicolon in ansi codes before the terminating `m` (@CosmicHorrorDev)
+
+- [`df3d898`](https://github.com/Aloso/to-html/commit/df3d898a383d3f05a8ff9d769052fb6d3b0370ab):
+  Auto-detect shell from parent process name (@Aloso)
+
+- [`b1e4774`](https://github.com/Aloso/to-html/commit/b1e4774200ee557be292531c5af30e88a3f875d5):
+  Make all values in config file optional (@Aloso)
+
+### Internal improvements
+
+- [`#33`](https://github.com/Aloso/to-html/pull/33): Replace `once_cell` usage with `std::sync::OnceLock` (@CosmicHorrorDev)
+
+- [`#35`](https://github.com/Aloso/to-html/pull/35): CI tweaks (@CosmicHorrorDev)
+
+- [`#36`](https://github.com/Aloso/to-html/pull/36): Add builder API to `ansi-to-html` crate (@Aloso)
+
 ## [0.1.5] - 2023-11-30
 
 - [`#19`](https://github.com/Aloso/to-html/pull/19): Make `to-html` configurable with a config file located in

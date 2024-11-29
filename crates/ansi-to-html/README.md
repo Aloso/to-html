@@ -38,7 +38,3 @@ All unsupported ANSI escape codes are stripped from the output.
 
 It should be easy to add support for more styles, if there's a straightforward HTML
 representation. If you need a different style (e.g. doubly underlined), file an issue.
-
-## Features
-
-When the  `lazy-init` feature is enabled, regexes are lazily initialized, which is more efficient if you want to convert A LOT of strings. The performance difference has not been tested.

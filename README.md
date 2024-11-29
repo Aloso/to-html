@@ -32,7 +32,7 @@ Commands can contain shell syntax, including pipes and redirections:
 to-html "echo Hello world! | grep 'H' > somefile.txt"
 ```
 
-The default shell is bash. Use `--shell`/`-s` to use a different shell:
+By default, it uses the same shell you are using. If it doesn't recognize the shell, it defaults to bash. Use `--shell`/`-s` to use a different shell:
 
 ```bash
 to-html -sfish "../" "ls"   # executed with fish
@@ -61,6 +61,26 @@ Cargo.toml  crates        LICENSE  src
 </pre>
 
 (colors can't be shown on GitHub)
+
+## Configuration file
+
+You can create a configuration file named `config.toml`:
+
+- Linux: `$XDG_CONFIG_HOME/to-html/config.toml` or `~/.config/to-html/config.toml`
+- macOS: `$HOME/Library/Application Support/to-html/config.toml`
+
+Example file with defaults:
+
+```toml
+[shell]
+program = "bash"       # override with --shell <PROGRAM>
+
+[output]
+cwd = false            # override with --cwd
+full_document = false  # override with --doc
+highlight = []         # override with --highlight <COMMANDS>
+css_prefix = ""        # override with --prefix <PREFIX>
+```
 
 ## ANSI support 🎨
 
@@ -130,6 +150,8 @@ The default terminal colors can be overridden with CSS classes, for example:
   --bright-red: #f88;
 }
 ```
+
+You can specify a custom prefix, e.g. with `--prefix 'foo-'`, used by all the CSS classes and variables. For example, `.terminal` then becomes `.foo-terminal`, and `--red` becomes `--foo-red`.
 
 ## Demonstration 📸
 
