@@ -10,7 +10,7 @@ on:
     - cron: '0 0 1 * *'
 
 jobs:
-  rustfmt:
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,31 +19,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.channel }}
-          components: rustfmt
-      - uses: actions/checkout@v4
+          components: clippy, rustfmt
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Run `cargo fmt`
         run: |
           cargo fmt --all -- --check
-
-  clippy:
-    needs: rustfmt
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        channel: [stable, beta]
-    steps:
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.channel }}
-          components: clippy
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Run `cargo clippy`
         run: |
           cargo clippy
 
-  build:
-    needs: clippy
+  test:
+    needs: lint
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
