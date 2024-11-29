@@ -91,7 +91,7 @@ fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdEr
     } else {
         Some(opts.prefix.to_owned())
     };
-    let convert_opts = ansi_to_html::Opts::default().four_bit_var_prefix(var_prefix);
+    let converter = ansi_to_html::Converter::new().four_bit_var_prefix(var_prefix);
 
     let mut cmd = String::new();
     let shell = opts.shell.as_deref().or_else(|| {
@@ -106,11 +106,11 @@ fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdEr
 
     let (cmd_out, cmd_err, _) = cmd::run(command, shell)?;
     if !cmd_out.is_empty() {
-        let html = ansi_to_html::convert_with_opts(&cmd_out, &convert_opts)?;
+        let html = converter.convert(&cmd_out)?;
         write!(buf, "{}", html)?;
     }
     if !cmd_err.is_empty() {
-        let html = ansi_to_html::convert_with_opts(&cmd_err, &convert_opts)?;
+        let html = converter.convert(&cmd_err)?;
         write!(buf, "{}", html)?;
     }
 
