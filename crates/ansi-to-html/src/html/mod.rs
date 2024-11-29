@@ -78,9 +78,10 @@ pub fn ansi_to_html(
                 }
 
                 let nums = &m.as_str()[2..len - 1];
-                let nums = nums.split(';').map(|n| n.parse::<u8>());
+                let norm_nums = nums.strip_suffix(';').unwrap_or(nums);
+                let norm_nums = norm_nums.split(';').map(|n| n.parse::<u8>());
 
-                for ansi in AnsiIter::new(nums) {
+                for ansi in AnsiIter::new(norm_nums) {
                     minifier.push_ansi_code(ansi?);
                 }
             }
