@@ -2,6 +2,8 @@ name: Test
 
 on:
   push:
+    branches:
+    - main
   pull_request:
   schedule:
     # Run monthly to keep Rust toolchain changes fresh
