@@ -18,7 +18,7 @@ jobs:
         with:
           toolchain: ${{ matrix.channel }}
           components: rustfmt
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run `cargo fmt`
         run: |
           cargo fmt --all -- --check
@@ -35,7 +35,7 @@ jobs:
           toolchain: ${{ matrix.channel }}
           components: clippy
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run `cargo clippy`
         run: |
           cargo clippy
@@ -52,7 +52,7 @@ jobs:
         with:
           toolchain: ${{ matrix.channel }}
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Build and run tests
         run: |
           cargo test --verbose --workspace
