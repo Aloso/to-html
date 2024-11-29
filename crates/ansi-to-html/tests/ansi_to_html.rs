@@ -88,3 +88,9 @@ fn ariadne() {
     <span style='color:#949494'>---&#39;</span>
     "###);
 }
+
+#[test]
+fn semicolon_before_terminator() {
+    let converted = ansi_to_html::convert("\x1b[31;mRed\x1b[0;m Plain").unwrap();
+    insta::assert_snapshot!(converted, @"<span style='color:var(--red,#a00)'>Red</span> Plain");
+}
