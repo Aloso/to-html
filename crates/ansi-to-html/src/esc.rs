@@ -18,14 +18,14 @@ use std::fmt;
 ///
 /// ```
 /// # use ansi_to_html::Esc;
-/// assert_eq!(format!("{}", Esc("<h1>")).as_str(), "&lt;h1&gt;");
+/// assert_eq!(&format!("{}", Esc("<h1>")), "&lt;h1&gt;");
 /// ```
 ///
 /// Convert it to a String directly:
 ///
 /// ```
 /// # use ansi_to_html::Esc;
-/// assert_eq!(Esc("<h1>").to_string().as_str(), "&lt;h1&gt;");
+/// assert_eq!(&Esc("<h1>").to_string(), "&lt;h1&gt;");
 /// ```
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Esc<T: AsRef<str>>(pub T);
