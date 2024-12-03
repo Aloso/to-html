@@ -25,7 +25,6 @@ dependencies = [
  "flate2",
  "insta",
  "regex",
- "thiserror",
 ]
 
 [[package]]
