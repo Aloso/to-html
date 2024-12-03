@@ -18,6 +18,8 @@ fn human_readable_to_ansi(s: &str) -> String {
             match inner {
                 // Control
                 "res" => out.push('0'),
+                // Style
+                "bold" => out.push('1'),
                 // Basic colors
                 "blue" => out.push_str("34"),
                 "cyan" => out.push_str("36"),
@@ -93,4 +95,28 @@ fn ariadne() {
 fn semicolon_before_terminator() {
     let converted = ansi_to_html::convert("\x1b[31;mRed\x1b[0;m Plain").unwrap();
     insta::assert_snapshot!(converted, @"<span style='color:var(--red,#a00)'>Red</span> Plain");
+}
+
+#[test]
+fn stylized_nothing() {
+    let input_to_expected = [
+        ("{{ bold }}{{ res }}{{ bold }}", ""),
+        ("Something{{ blue }}{{ bold }}", "Something"),
+        (
+            "{{ bold }}Bold{{ bold }}{{ blue }}{{ res }}{{ bold }} ... still bold",
+            "<b>Bold ... still bold</b>",
+        ),
+    ];
+
+    for (input, expected) in input_to_expected {
+        let styled = human_readable_to_ansi(input);
+        let converted = ansi_to_html::Converter::new()
+            .skip_optimize(true)
+            .convert(&styled)
+            .unwrap();
+        assert_eq!(
+            converted, expected,
+            "Styles without any text should be ommitted by the minifier"
+        );
+    }
 }

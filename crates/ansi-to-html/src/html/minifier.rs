@@ -69,18 +69,25 @@ impl Minifier {
     /// Apply buffered ansi codes while ignoring ansi codes that repeat the previously used style
     fn apply_ansi_codes(&mut self) {
         let prev_styling = self.current_styling;
-        for &code in &self.code_buffer {
+        let mut to_apply = &self.code_buffer[..];
+        for (index, &code) in self.code_buffer.iter().enumerate() {
             self.current_styling.apply(code);
-        }
-        if prev_styling != self.current_styling {
-            for &code in &self.code_buffer {
-                self.converter.consume_ansi_code(code);
+            if self.current_styling == prev_styling {
+                to_apply = &self.code_buffer.get(index + 1..).unwrap_or_default();
             }
+        }
+        for &code in to_apply {
+            self.converter.consume_ansi_code(code);
         }
         self.code_buffer.clear();
     }
 
     pub fn push_str(&mut self, text: &str) {
+        // No point in applying styles to nothing
+        if text.is_empty() {
+            return;
+        }
+
         self.apply_ansi_codes();
         self.converter.push_str(text);
     }
