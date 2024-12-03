@@ -93,7 +93,9 @@ impl Minifier {
     }
 
     pub fn into_html(mut self) -> String {
-        self.apply_ansi_codes();
+        // End of text, so flush out any styles
+        self.converter.consume_ansi_code(Ansi::Reset);
+
         self.converter.result()
     }
 }

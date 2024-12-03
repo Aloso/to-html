@@ -20,6 +20,8 @@ fn human_readable_to_ansi(s: &str) -> String {
                 "res" => out.push('0'),
                 // Style
                 "bold" => out.push('1'),
+                "underline" => out.push('4'),
+                "underline_off" => out.push_str("24"),
                 // Basic colors
                 "blue" => out.push_str("34"),
                 "cyan" => out.push_str("36"),
@@ -98,13 +100,19 @@ fn semicolon_before_terminator() {
 }
 
 #[test]
-fn stylized_nothing() {
+fn minifier_discards_useless_styles() {
     let input_to_expected = [
         ("{{ bold }}{{ res }}{{ bold }}", ""),
-        ("Something{{ blue }}{{ bold }}", "Something"),
+        ("Plain{{ blue }}{{ bold }}", "Plain"),
         (
             "{{ bold }}Bold{{ bold }}{{ blue }}{{ res }}{{ bold }} ... still bold",
             "<b>Bold ... still bold</b>",
+        ),
+        ("Plain{{ bold }}Bold{{ red }}", "Plain<b>Bold</b>"),
+        ("{{ bold }}Bold{{ blue }}", "<b>Bold</b>"),
+        (
+            "{{ underline }}Underline{{ bold }}{{ underline_off }}Bold",
+            "<u>Underline</u><b>Bold</b>",
         ),
     ];
 
@@ -120,3 +128,5 @@ fn stylized_nothing() {
         );
     }
 }
+
+// TODO: switch fuzz test over to a prop test after it stops picking up bugs
