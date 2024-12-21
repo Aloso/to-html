@@ -23,8 +23,17 @@ lazy-init = []
 [dev-dependencies]
 divan = "0.1.16"
 flate2 = "1.0.35"
+html5ever = "0.29.0"
 insta = "1.29.0"
+proptest = "1.6.0"
+
+[target.'cfg(fuzzing)'.dependencies]
+html5ever = "0.29.0"
 
 [[bench]]
 name = "convert"
 harness = false
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ["cfg(fuzzing)"]

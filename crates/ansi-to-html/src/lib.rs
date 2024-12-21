@@ -57,6 +57,8 @@ mod color;
 mod error;
 mod esc;
 mod html;
+#[cfg(any(test, fuzzing))]
+pub mod test_utils;
 
 use ansi::{Ansi, AnsiIter};
 use color::Color;
