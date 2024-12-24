@@ -8,13 +8,18 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
+html5ever = "0.29.0"
 libfuzzer-sys = "0.4"
 
 [dependencies.ansi-to-html]
 path = ".."
 
-[workspace]
-members = ["."]
+[dev-dependencies]
+insta = "1.29.0"
+
+[lib]
+name = "html_interpreter"
+path = "utils/html_interpreter.rs"
 
 [[bin]]
 name = "opt_equiv"

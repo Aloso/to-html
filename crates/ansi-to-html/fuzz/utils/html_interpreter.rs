@@ -1,4 +1,3 @@
-use crate::{convert, Converter};
 use html5ever::{
     local_name, tendril,
     tokenizer::{
@@ -9,38 +8,8 @@ use html5ever::{
 
 use std::{cell::RefCell, collections::BTreeSet, mem, str::FromStr};
 
-/// Ensures that our optimized HTML output is semantically equivalent to the unoptimized output
-/// (along with verifying some other properties like our HTML being reasonably well-formed)
-pub fn assert_opt_equiv_to_no_opt(ansi_text: &str) {
-    let Ok(htmlified) = Converter::new().skip_optimize(true).convert(ansi_text) else {
-        return;
-    };
-    let full_text = normalize_output(interpret_html(&htmlified));
-    let opt_text = normalize_output(interpret_html(&convert(ansi_text).unwrap()));
-
-    assert_eq!(
-        full_text, opt_text,
-        "Optimized text should be semantically equivalent"
-    );
-}
-
-fn normalize_output(texts: Vec<StylizedText>) -> Vec<StylizedText> {
-    texts
-        .into_iter()
-        // Filter out any empty spans of text
-        .filter(|t| !t.text.is_empty())
-        .fold(Vec::new(), |mut acc, text| {
-            match acc.last_mut() {
-                // Coalesce text with consecutive runs of the same style
-                Some(top) if top.styles == text.styles => top.text.push_str(&text.text),
-                _ => acc.push(text),
-            }
-            acc
-        })
-}
-
 /// Convert HTML to runs of stylized text
-fn interpret_html(text: &str) -> Vec<StylizedText> {
+pub fn interpret_html(text: &str) -> Vec<StylizedText> {
     let tokenizer = Tokenizer::new(HtmlInterpreter::default(), Default::default());
     let mut queue = BufferQueue::default();
     let text = tendril::Tendril::from_str(text)
@@ -209,9 +178,9 @@ impl RawStyle {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct StylizedText {
-    styles: Styles,
-    text: String,
+pub struct StylizedText {
+    pub styles: Styles,
+    pub text: String,
 }
 
 impl StylizedText {
@@ -226,7 +195,7 @@ impl StylizedText {
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
-struct Styles {
+pub struct Styles {
     bold: bool,
     italic: bool,
     underlined: bool,
@@ -256,7 +225,7 @@ impl Styles {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct Attr {
+pub struct Attr {
     name: String,
     value: String,
 }
@@ -280,12 +249,10 @@ impl Attr {
 mod tests {
     use super::*;
 
-    use proptest::prelude::*;
-
     #[test]
     fn sanity() {
         let ansi_text = "\x1b[1mBold\x1b[31mRed and Bold";
-        let htmlified = convert(ansi_text).unwrap();
+        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
         insta::assert_debug_snapshot!(interpret_html(&htmlified), @r#"
         [
             StylizedText {
@@ -317,12 +284,5 @@ mod tests {
             },
         ]
         "#);
-    }
-
-    proptest! {
-        #[test]
-        fn proptest_opt_equiv(ansi_text in r"(.*\x1b\[([0-9];?)+m){3,}.*") {
-            assert_opt_equiv_to_no_opt(&ansi_text);
-        }
     }
 }
