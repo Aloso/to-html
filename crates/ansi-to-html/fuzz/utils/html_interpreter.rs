@@ -71,7 +71,7 @@ impl Inner {
     fn apply_start_style(&mut self, style: RawStyle) {
         self.emit_pending_text();
 
-        if let Some(last_last) = self.state.last_style.replace(style) {
+        if let Some(last_last) = self.state.pending_style.replace(style) {
             self.state.raw_styles.push(last_last);
         }
     }
@@ -79,7 +79,7 @@ impl Inner {
     fn apply_end_style(&mut self, style: RawStyle) {
         self.emit_pending_text();
 
-        let mut start_tag = match self.state.last_style.take() {
+        let mut start_tag = match self.state.pending_style.take() {
             // We just pushed an opening tag without pushing text, so this is an empty span
             Some(style) => {
                 let mut styles = Styles::new(&self.state.raw_styles);
@@ -99,27 +99,28 @@ impl Inner {
     }
 
     fn push_pending_text(&mut self, s: &str) {
-        if let Some(pending) = self.state.last_style.take() {
+        if let Some(pending) = self.state.pending_style.take() {
             self.state.raw_styles.push(pending);
         }
 
-        self.state.text = match self.state.text.take() {
+        let pending_text = match self.state.pending_text.take() {
             Some(mut text) => {
                 text.push_str(s);
-                Some(text)
+                text
             }
-            None => Some(s.to_owned()),
-        }
+            None => s.to_owned(),
+        };
+        self.state.pending_text = Some(pending_text);
     }
 
     fn emit_pending_text(&mut self) {
-        // `last_state` gets cleared out when text gets pushed, so it being `Some` means there's no
-        // pending text
-        if self.state.last_style.is_some() {
+        // `pending_style` gets cleared out when text gets pushed, so it being `Some` means there's
+        // no pending text
+        if self.state.pending_style.is_some() {
             return;
         }
 
-        if let Some(text) = self.state.text.take() {
+        if let Some(text) = self.state.pending_text.take() {
             let styles = Styles::new(&self.state.raw_styles);
             let stylized_text = StylizedText::new(styles, text);
             self.output.push(stylized_text);
@@ -133,11 +134,11 @@ struct State {
     ///
     /// We buffer the styles that we push, so that we can identify and retain empty pairs of
     /// elements as empty text
-    last_style: Option<RawStyle>,
-    /// The stack of styles that are currently active except for `last_style`
+    pending_style: Option<RawStyle>,
+    /// The stack of styles that are currently active except for `pending_style`
     raw_styles: Vec<RawStyle>,
     /// The current run of text
-    text: Option<String>,
+    pending_text: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
