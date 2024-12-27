@@ -103,14 +103,8 @@ impl Inner {
             self.state.raw_styles.push(pending);
         }
 
-        let pending_text = match self.state.pending_text.take() {
-            Some(mut text) => {
-                text.push_str(s);
-                text
-            }
-            None => s.to_owned(),
-        };
-        self.state.pending_text = Some(pending_text);
+        let pending_text = self.state.pending_text.get_or_insert_default();
+        pending_text.push_str(s);
     }
 
     fn emit_pending_text(&mut self) {
