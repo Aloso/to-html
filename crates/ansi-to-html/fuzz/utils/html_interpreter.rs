@@ -11,13 +11,10 @@ use std::{cell::RefCell, collections::BTreeSet, mem, str::FromStr};
 /// Convert HTML to runs of stylized text
 pub fn interpret_html(text: &str) -> Vec<StylizedText> {
     let tokenizer = Tokenizer::new(HtmlInterpreter::default(), Default::default());
-    let mut queue = BufferQueue::default();
-    let text = tendril::Tendril::from_str(text)
-        .unwrap()
-        .try_reinterpret::<tendril::fmt::UTF8>()
-        .unwrap();
+    let queue = BufferQueue::default();
+    let text = tendril::Tendril::from_str(text).unwrap();
     queue.push_back(text);
-    let res = tokenizer.feed(&mut queue);
+    let res = tokenizer.feed(&queue);
     assert!(matches!(res, TokenizerResult::Done));
     tokenizer.end();
     tokenizer.sink.finish()
