@@ -45,3 +45,22 @@ jobs:
       - name: Build and run tests
         run: |
           cargo test --verbose --workspace
+
+  fuzz:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Cache fuzz corpus
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-${{ hashFiles('Cargo.lock', 'crates/ansi-to-html/fuzz/fuzz_targets/**') }}
+          path: crates/ansi-to-html/fuzz/corpus
+        # Run the fuzzer for a minute
+      - name: Run fuzzers
+        run: |
+          cargo --locked install cargo-fuzz
+          cargo --locked fuzz run --jobs=4 --fuzz-dir=crates/ansi-to-html/fuzz opt_equiv -- -max_total_time=60 -timeout=30

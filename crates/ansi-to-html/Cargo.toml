@@ -28,3 +28,7 @@ insta = "1.29.0"
 [[bench]]
 name = "convert"
 harness = false
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ["cfg(fuzzing)"]
