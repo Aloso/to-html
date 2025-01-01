@@ -137,7 +137,14 @@ pub fn ansi_to_html(
 
     minifier.push_ansi_code(Ansi::Reset); // make sure all tags are closed
 
-    Ok(minifier.into_html())
+    Ok(minifier.to_html())
+}
+
+trait AnsiSink {
+    fn clear_styles(&mut self);
+    fn push_ansi_code(&mut self, ansi: Ansi);
+    fn push_str(&mut self, text: &str);
+    fn to_html(&mut self) -> String;
 }
 
 #[derive(Debug, Default)]
@@ -155,33 +162,6 @@ impl AnsiConverter {
             four_bit_var_prefix,
             theme,
             ..Self::default()
-        }
-    }
-
-    fn consume_ansi_code(&mut self, ansi: Ansi) {
-        match ansi {
-            Ansi::Noop => {}
-            Ansi::Reset => self.clear_style(|_| true),
-            Ansi::Bold => self.set_style(Style::Bold),
-            Ansi::Faint => self.set_style(Style::Faint),
-            Ansi::Italic => self.set_style(Style::Italic),
-            Ansi::Underline => self.set_style(Style::Underline(UnderlineStyle::Default)),
-            Ansi::Invert => self.set_style(Style::Inverted),
-            Ansi::DoubleUnderline => self.set_style(Style::Underline(UnderlineStyle::Double)),
-            Ansi::CrossedOut => self.set_style(Style::CrossedOut),
-            Ansi::BoldAndFaintOff => self.clear_style(|&s| s == Style::Bold || s == Style::Faint),
-            Ansi::ItalicOff => self.clear_style(|&s| s == Style::Italic),
-            Ansi::UnderlineOff => self.clear_style(|&s| matches!(s, Style::Underline(_))),
-            Ansi::InvertOff => self.clear_style(|&s| s == Style::Inverted),
-            Ansi::CrossedOutOff => self.clear_style(|&s| s == Style::CrossedOut),
-            Ansi::ForgroundColor(c) => self.set_style(Style::ForegroundColor(c)),
-            Ansi::DefaultForegroundColor => {
-                self.clear_style(|&s| matches!(s, Style::ForegroundColor(_)))
-            }
-            Ansi::BackgroundColor(c) => self.set_style(Style::BackgroundColor(c)),
-            Ansi::DefaultBackgroundColor => {
-                self.clear_style(|&s| matches!(s, Style::BackgroundColor(_)))
-            }
         }
     }
 
@@ -209,12 +189,45 @@ impl AnsiConverter {
             self.styles.push(style);
         }
     }
+}
 
-    fn push_str(&mut self, s: &str) {
-        self.result.push_str(s);
+impl AnsiSink for AnsiConverter {
+    fn clear_styles(&mut self) {
+        self.clear_style(|_| true);
     }
 
-    fn result(self) -> String {
-        self.result
+    fn push_ansi_code(&mut self, ansi: Ansi) {
+        match ansi {
+            Ansi::Noop => {}
+            Ansi::Reset => self.clear_style(|_| true),
+            Ansi::Bold => self.set_style(Style::Bold),
+            Ansi::Faint => self.set_style(Style::Faint),
+            Ansi::Italic => self.set_style(Style::Italic),
+            Ansi::Underline => self.set_style(Style::Underline(UnderlineStyle::Default)),
+            Ansi::Invert => self.set_style(Style::Inverted),
+            Ansi::DoubleUnderline => self.set_style(Style::Underline(UnderlineStyle::Double)),
+            Ansi::CrossedOut => self.set_style(Style::CrossedOut),
+            Ansi::BoldAndFaintOff => self.clear_style(|&s| s == Style::Bold || s == Style::Faint),
+            Ansi::ItalicOff => self.clear_style(|&s| s == Style::Italic),
+            Ansi::UnderlineOff => self.clear_style(|&s| matches!(s, Style::Underline(_))),
+            Ansi::InvertOff => self.clear_style(|&s| s == Style::Inverted),
+            Ansi::CrossedOutOff => self.clear_style(|&s| s == Style::CrossedOut),
+            Ansi::ForgroundColor(c) => self.set_style(Style::ForegroundColor(c)),
+            Ansi::DefaultForegroundColor => {
+                self.clear_style(|&s| matches!(s, Style::ForegroundColor(_)))
+            }
+            Ansi::BackgroundColor(c) => self.set_style(Style::BackgroundColor(c)),
+            Ansi::DefaultBackgroundColor => {
+                self.clear_style(|&s| matches!(s, Style::BackgroundColor(_)))
+            }
+        }
+    }
+
+    fn push_str(&mut self, text: &str) {
+        self.result.push_str(text);
+    }
+
+    fn to_html(&mut self) -> String {
+        self.result.clone()
     }
 }
