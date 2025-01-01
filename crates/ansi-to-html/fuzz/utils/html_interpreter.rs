@@ -20,7 +20,7 @@ pub fn assert_opt_equiv_to_no_opt(ansi_text: &str) {
 
     assert_eq!(
         full_text, opt_text,
-        "Optimized text should be semantically equivalent"
+        "Text should be semantically equivalent\nNo-Opt: {full_text:#?}\nOpt: {opt_text:#?}"
     );
 }
 
@@ -325,7 +325,7 @@ mod tests {
     }
 
     #[test]
-    fn competing_colors() {
+    fn input_blue_red_text_red_text() {
         // Input: blue -> red -> "Red" -> red -> " Still Red"
         let ansi_text = "\x1b[34;31mRed\x1b[31m Still Red";
         assert_opt_equiv_to_no_opt(ansi_text);
@@ -333,6 +333,30 @@ mod tests {
         insta::assert_snapshot!(
             htmlified,
             @"<span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
+        );
+    }
+
+    #[test]
+    fn input_red_text_blue_red_text() {
+        // Input: red -> "Red" -> blue -> red -> " Still Red"
+        let ansi_text = "\x1b[31mRed\x1b[34;31m Still Red";
+        assert_opt_equiv_to_no_opt(ansi_text);
+        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
+        insta::assert_snapshot!(
+            htmlified,
+            @"<span style='color:var(--red,#a00)'>Red Still Red</span>"
+        );
+    }
+
+    #[test]
+    fn input_uline_blue_red_ulineoff_text_red_text() {
+        // Input: underline -> blue -> red -> underline off -> "Red" -> red -> " Still Red"
+        let ansi_text = "\x1b[4;34;31;24mRed\x1b[31m Still Red";
+        assert_opt_equiv_to_no_opt(ansi_text);
+        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
+        insta::assert_snapshot!(
+            htmlified,
+            @"<u><span style='color:var(--blue,#00a)'></span></u><span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
         );
     }
 }
