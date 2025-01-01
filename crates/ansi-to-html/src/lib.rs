@@ -181,11 +181,12 @@ impl Converter {
             theme,
         } = *self;
 
+        let four_bit_var_prefix = four_bit_var_prefix.to_owned();
         let html = if skip_escape {
-            html::ansi_to_html(input, four_bit_var_prefix.to_owned(), theme)?
+            html::ansi_to_html(input, four_bit_var_prefix, theme, skip_optimize)?
         } else {
             let input = Esc(input).to_string();
-            html::ansi_to_html(&input, four_bit_var_prefix.to_owned(), theme)?
+            html::ansi_to_html(&input, four_bit_var_prefix, theme, skip_optimize)?
         };
 
         let html = if skip_optimize { html } else { optimize(&html) };

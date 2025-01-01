@@ -107,8 +107,13 @@ pub fn ansi_to_html(
     input: &str,
     four_bit_var_prefix: Option<String>,
     theme: Theme,
+    skip_optimize: bool,
 ) -> Result<String, Error> {
-    let mut minifier = minifier::Minifier::new(four_bit_var_prefix, theme);
+    let mut ansi_sink: Box<dyn AnsiSink> = if skip_optimize {
+        Box::new(AnsiConverter::new(four_bit_var_prefix, theme))
+    } else {
+        Box::new(minifier::Minifier::new(four_bit_var_prefix, theme))
+    };
 
     for fragment in AnsiParser::new(input) {
         match fragment {
@@ -119,7 +124,7 @@ pub fn ansi_to_html(
 
                 let len = ansi_codes.len();
                 if len == 3 {
-                    minifier.clear_styles();
+                    ansi_sink.clear_styles();
                     continue;
                 }
 
@@ -128,16 +133,16 @@ pub fn ansi_to_html(
                 let norm_nums = norm_nums.split(';').map(|n| n.parse::<u8>());
 
                 for ansi in AnsiIter::new(norm_nums) {
-                    minifier.push_ansi_code(ansi?);
+                    ansi_sink.push_ansi_code(ansi?);
                 }
             }
-            AnsiFragment::Text(text) => minifier.push_str(text),
+            AnsiFragment::Text(text) => ansi_sink.push_str(text),
         }
     }
 
-    minifier.push_ansi_code(Ansi::Reset); // make sure all tags are closed
+    ansi_sink.push_ansi_code(Ansi::Reset); // make sure all tags are closed
 
-    Ok(minifier.to_html())
+    Ok(ansi_sink.to_html())
 }
 
 trait AnsiSink {
