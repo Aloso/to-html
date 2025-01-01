@@ -1,4 +1,4 @@
-use crate::{html::AnsiConverter, Ansi, Color};
+use crate::{html::{AnsiConverter, AnsiSink}, Ansi, Color};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct CurrentStyling {
@@ -58,14 +58,6 @@ impl Minifier {
         }
     }
 
-    pub fn clear_styles(&mut self) {
-        self.push_ansi_code(Ansi::Reset);
-    }
-
-    pub fn push_ansi_code(&mut self, ansi: Ansi) {
-        self.code_buffer.push(ansi);
-    }
-
     /// Apply buffered ansi codes while ignoring ansi codes that repeat the previously used style
     fn apply_ansi_codes(&mut self) {
         let prev_styling = self.current_styling;
@@ -74,19 +66,29 @@ impl Minifier {
         }
         if prev_styling != self.current_styling {
             for &code in &self.code_buffer {
-                self.converter.consume_ansi_code(code);
+                self.converter.push_ansi_code(code);
             }
         }
         self.code_buffer.clear();
     }
+}
 
-    pub fn push_str(&mut self, text: &str) {
+impl AnsiSink for Minifier {
+    fn clear_styles(&mut self) {
+        self.push_ansi_code(Ansi::Reset);
+    }
+
+    fn push_ansi_code(&mut self, ansi: Ansi) {
+        self.code_buffer.push(ansi);
+    }
+
+    fn push_str(&mut self, text: &str) {
         self.apply_ansi_codes();
         self.converter.push_str(text);
     }
 
-    pub fn into_html(mut self) -> String {
+    fn to_html(&mut self) -> String {
         self.apply_ansi_codes();
-        self.converter.result()
+        self.converter.to_html()
     }
 }
