@@ -53,15 +53,20 @@ pub fn ansi_to_html(
     mut input: &str,
     ansi_regex: &Regex,
     four_bit_var_prefix: Option<String>,
+    skip_optimize: bool,
 ) -> Result<String, Error> {
-    let mut minifier = minifier::Minifier::new(four_bit_var_prefix);
+    let mut ansi_sink: Box<dyn AnsiSink> = if skip_optimize {
+        Box::new(AnsiConverter::new(four_bit_var_prefix))
+    } else {
+        Box::new(minifier::Minifier::new(four_bit_var_prefix))
+    };
 
     loop {
         match ansi_regex.find(input) {
             Some(m) => {
                 if m.start() > 0 {
                     let (before, after) = input.split_at(m.start());
-                    minifier.push_str(before);
+                    ansi_sink.push_str(before);
                     input = after;
                 }
 
@@ -73,7 +78,7 @@ pub fn ansi_to_html(
                 }
 
                 if len == 3 {
-                    minifier.clear_styles();
+                    ansi_sink.clear_styles();
                     continue;
                 }
 
@@ -82,18 +87,18 @@ pub fn ansi_to_html(
                 let norm_nums = norm_nums.split(';').map(|n| n.parse::<u8>());
 
                 for ansi in AnsiIter::new(norm_nums) {
-                    minifier.push_ansi_code(ansi?);
+                    ansi_sink.push_ansi_code(ansi?);
                 }
             }
             None => {
-                minifier.push_str(input);
+                ansi_sink.push_str(input);
                 break;
             }
         }
     }
-    minifier.push_ansi_code(Ansi::Reset); // make sure all tags are closed
+    ansi_sink.push_ansi_code(Ansi::Reset); // make sure all tags are closed
 
-    Ok(minifier.to_html())
+    Ok(ansi_sink.to_html())
 }
 
 trait AnsiSink {

@@ -1,4 +1,7 @@
-use crate::{html::{AnsiConverter, AnsiSink}, Ansi, Color};
+use crate::{
+    html::{AnsiConverter, AnsiSink},
+    Ansi, Color,
+};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct CurrentStyling {
