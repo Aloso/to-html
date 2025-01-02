@@ -166,11 +166,12 @@ impl Converter {
             ref four_bit_var_prefix,
         } = *self;
 
+        let four_bit_var_prefix = four_bit_var_prefix.to_owned();
         let html = if skip_escape {
-            html::ansi_to_html(input, ansi_regex(), four_bit_var_prefix.to_owned())?
+            html::ansi_to_html(input, ansi_regex(), four_bit_var_prefix, skip_optimize)?
         } else {
             let input = Esc(input).to_string();
-            html::ansi_to_html(&input, ansi_regex(), four_bit_var_prefix.to_owned())?
+            html::ansi_to_html(&input, ansi_regex(), four_bit_var_prefix, skip_optimize)?
         };
 
         let html = if skip_optimize { html } else { optimize(&html) };

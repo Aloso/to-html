@@ -53,15 +53,20 @@ pub fn ansi_to_html(
     mut input: &str,
     ansi_regex: &Regex,
     four_bit_var_prefix: Option<String>,
+    skip_optimize: bool,
 ) -> Result<String, Error> {
-    let mut minifier = minifier::Minifier::new(four_bit_var_prefix);
+    let mut ansi_sink: Box<dyn AnsiSink> = if skip_optimize {
+        Box::new(AnsiConverter::new(four_bit_var_prefix))
+    } else {
+        Box::new(minifier::Minifier::new(four_bit_var_prefix))
+    };
 
     loop {
         match ansi_regex.find(input) {
             Some(m) => {
                 if m.start() > 0 {
                     let (before, after) = input.split_at(m.start());
-                    minifier.push_str(before);
+                    ansi_sink.push_str(before);
                     input = after;
                 }
 
@@ -73,7 +78,7 @@ pub fn ansi_to_html(
                 }
 
                 if len == 3 {
-                    minifier.clear_styles();
+                    ansi_sink.clear_styles();
                     continue;
                 }
 
@@ -82,18 +87,25 @@ pub fn ansi_to_html(
                 let norm_nums = norm_nums.split(';').map(|n| n.parse::<u8>());
 
                 for ansi in AnsiIter::new(norm_nums) {
-                    minifier.push_ansi_code(ansi?);
+                    ansi_sink.push_ansi_code(ansi?);
                 }
             }
             None => {
-                minifier.push_str(input);
+                ansi_sink.push_str(input);
                 break;
             }
         }
     }
-    minifier.push_ansi_code(Ansi::Reset); // make sure all tags are closed
+    ansi_sink.push_ansi_code(Ansi::Reset); // make sure all tags are closed
 
-    Ok(minifier.into_html())
+    Ok(ansi_sink.to_html())
+}
+
+trait AnsiSink {
+    fn clear_styles(&mut self);
+    fn push_ansi_code(&mut self, ansi: Ansi);
+    fn push_str(&mut self, text: &str);
+    fn to_html(&mut self) -> String;
 }
 
 #[derive(Debug, Default)]
@@ -112,7 +124,36 @@ impl AnsiConverter {
         }
     }
 
-    fn consume_ansi_code(&mut self, ansi: Ansi) {
+    fn set_style(&mut self, s: Style) {
+        s.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
+        self.styles.push(s);
+    }
+
+    fn clear_style(&mut self, cond: impl Fn(&Style) -> bool) {
+        let Some((i, _)) = self.styles.iter().enumerate().find(|&(_, s)| cond(s)) else {
+            return;
+        };
+        // Unwind the stack of styles past the style being cleared
+        for style in self.styles.drain(i..).rev() {
+            style.clear(&mut self.result);
+            if !cond(&style) {
+                self.styles_to_apply.push(style);
+            }
+        }
+        // Re-wind back styles that are still set
+        for style in self.styles_to_apply.drain(..).rev() {
+            style.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
+            self.styles.push(style);
+        }
+    }
+}
+
+impl AnsiSink for AnsiConverter {
+    fn clear_styles(&mut self) {
+        self.clear_style(|_| true);
+    }
+
+    fn push_ansi_code(&mut self, ansi: Ansi) {
         match ansi {
             Ansi::Noop => {}
             Ansi::Reset => self.clear_style(|_| true),
@@ -137,35 +178,11 @@ impl AnsiConverter {
         }
     }
 
-    fn set_style(&mut self, s: Style) {
-        if !self.styles.contains(&s) {
-            s.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
-            self.styles.push(s);
-        }
+    fn push_str(&mut self, text: &str) {
+        self.result.push_str(text);
     }
 
-    fn clear_style(&mut self, cond: impl Fn(&Style) -> bool) {
-        if let Some((i, _)) = self.styles.iter().enumerate().find(|&(_, s)| cond(s)) {
-            while self.styles.len() > i {
-                let style = self.styles.pop().unwrap();
-                style.clear(&mut self.result);
-                if !cond(&style) {
-                    self.styles_to_apply.push(style);
-                }
-            }
-        }
-        for &style in &self.styles_to_apply {
-            style.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
-            self.styles.push(style);
-        }
-        self.styles_to_apply.clear();
-    }
-
-    fn push_str(&mut self, s: &str) {
-        self.result.push_str(s);
-    }
-
-    fn result(self) -> String {
-        self.result
+    fn to_html(&mut self) -> String {
+        self.result.clone()
     }
 }
