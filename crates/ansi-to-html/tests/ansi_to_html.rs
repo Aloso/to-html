@@ -16,8 +16,10 @@ fn human_readable_to_ansi(s: &str) -> String {
             // This is missing a lot of tokens. I just added enough to get the tests running
             out.push_str("\x1b[");
             match inner {
-                // Control
+                // Styles
                 "res" => out.push('0'),
+                "underline" => out.push('4'),
+                "double_underline" => out.push_str("21"),
                 // Basic colors
                 "blue" => out.push_str("34"),
                 "cyan" => out.push_str("36"),
@@ -93,4 +95,23 @@ fn ariadne() {
 fn semicolon_before_terminator() {
     let converted = ansi_to_html::convert("\x1b[31;mRed\x1b[0;m Plain").unwrap();
     insta::assert_snapshot!(converted, @"<span style='color:var(--red,#a00)'>Red</span> Plain");
+}
+
+#[test]
+fn underlines() {
+    let readable = "{{ underline }}Single{{ res }} {{ double_underline }}Double";
+    let ansi_text = human_readable_to_ansi(readable);
+    let opt = ansi_to_html::convert(&ansi_text).unwrap();
+    let no_opt = ansi_to_html::Converter::new()
+        .skip_optimize(true)
+        .convert(&ansi_text)
+        .unwrap();
+    assert_eq!(
+        opt, no_opt,
+        "Optimized and unoptimized text should be equivalent in this case"
+    );
+    insta::assert_snapshot!(
+        no_opt,
+        @"<u>Single</u> <u style='text-decoration-style:double'>Double</u>"
+    );
 }
