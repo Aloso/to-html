@@ -186,7 +186,7 @@ pub fn convert_with_opts(input: &str, converter: &Converter) -> Result<String, E
 
 const ANSI_REGEX: &str = r"\u{1b}(\[[0-9;?]*[A-HJKSTfhilmnsu]|\(B)";
 const OPT_REGEX_1: &str = r"<span \w+='[^']*'></span>|<b></b>|<i></i>|<u></u>|<s></s>";
-const OPT_REGEX_2: &str = "</b><b>|</i><i>|</u><u>|</s><s>";
+const OPT_REGEX_2: &str = "</b><b>|</i><i>|</s><s>";
 
 fn ansi_regex() -> &'static Regex {
     static REGEX: OnceLock<Regex> = OnceLock::new();
