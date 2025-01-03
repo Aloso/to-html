@@ -9,7 +9,7 @@ enum Style {
     Bold,
     Faint,
     Italic,
-    Underline,
+    Underline(UnderlineStyle),
     CrossedOut,
     ForegroundColor(Color),
     BackgroundColor(Color),
@@ -22,7 +22,8 @@ impl Style {
             Style::Bold => "<b>",
             Style::Faint => "<span style='opacity:0.67'>",
             Style::Italic => "<i>",
-            Style::Underline => "<u>",
+            Style::Underline(UnderlineStyle::Default) => "<u>",
+            Style::Underline(UnderlineStyle::Double) => "<u style='text-decoration-style:double'>",
             Style::CrossedOut => "<s>",
             Style::ForegroundColor(c) => {
                 s = c.into_opening_fg_span(var_prefix);
@@ -40,12 +41,18 @@ impl Style {
             Style::Bold => "</b>",
             Style::Faint => "</span>",
             Style::Italic => "</i>",
-            Style::Underline => "</u>",
+            Style::Underline(_) => "</u>",
             Style::CrossedOut => "</s>",
             Style::ForegroundColor(_) => "</span>",
             Style::BackgroundColor(_) => "</span>",
         })
     }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+enum UnderlineStyle {
+    Default,
+    Double,
 }
 
 /// Convert ANSI sequences to html. This does NOT escape html characters such as `<` and `&`.
@@ -119,12 +126,12 @@ impl AnsiConverter {
             Ansi::Bold => self.set_style(Style::Bold),
             Ansi::Faint => self.set_style(Style::Faint),
             Ansi::Italic => self.set_style(Style::Italic),
-            Ansi::Underline => self.set_style(Style::Underline),
+            Ansi::Underline => self.set_style(Style::Underline(UnderlineStyle::Default)),
+            Ansi::DoubleUnderline => self.set_style(Style::Underline(UnderlineStyle::Double)),
             Ansi::CrossedOut => self.set_style(Style::CrossedOut),
-            Ansi::BoldOff => self.clear_style(|&s| s == Style::Bold),
             Ansi::BoldAndFaintOff => self.clear_style(|&s| s == Style::Bold || s == Style::Faint),
             Ansi::ItalicOff => self.clear_style(|&s| s == Style::Italic),
-            Ansi::UnderlineOff => self.clear_style(|&s| s == Style::Underline),
+            Ansi::UnderlineOff => self.clear_style(|&s| matches!(s, Style::Underline(_))),
             Ansi::CrossedOutOff => self.clear_style(|&s| s == Style::CrossedOut),
             Ansi::ForgroundColor(c) => self.set_style(Style::ForegroundColor(c)),
             Ansi::DefaultForegroundColor => {

@@ -1,4 +1,7 @@
-use crate::{html::AnsiConverter, Ansi, Color};
+use crate::{
+    html::{AnsiConverter, UnderlineStyle},
+    Ansi, Color,
+};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct CurrentStyling {
@@ -7,7 +10,7 @@ struct CurrentStyling {
     bold: bool,
     faint: bool,
     italic: bool,
-    underline: bool,
+    underline: Option<UnderlineStyle>,
     crossed_out: bool,
 }
 
@@ -19,15 +22,15 @@ impl CurrentStyling {
             Ansi::Bold => self.bold = true,
             Ansi::Faint => self.faint = true,
             Ansi::Italic => self.italic = true,
-            Ansi::Underline => self.underline = true,
+            Ansi::Underline => self.underline = Some(UnderlineStyle::Default),
+            Ansi::DoubleUnderline => self.underline = Some(UnderlineStyle::Double),
             Ansi::CrossedOut => self.crossed_out = true,
-            Ansi::BoldOff => self.bold = false,
             Ansi::BoldAndFaintOff => {
                 self.bold = false;
                 self.faint = false;
             }
             Ansi::ItalicOff => self.italic = false,
-            Ansi::UnderlineOff => self.underline = false,
+            Ansi::UnderlineOff => self.underline = None,
             Ansi::CrossedOutOff => self.crossed_out = false,
             Ansi::ForgroundColor(c) => self.fg = Some(c),
             Ansi::DefaultForegroundColor => self.fg = None,

@@ -88,7 +88,7 @@ impl Inner {
         };
 
         // The end tag won't have any of the attrs that the start had
-        if let RawStyle::Span(attrs) = &mut start_tag {
+        if let RawStyle::Span(attrs) | RawStyle::Underlined(attrs) = &mut start_tag {
             let _ = mem::take(attrs);
         }
 
@@ -136,7 +136,7 @@ struct State {
 enum RawStyle {
     Bold,
     Italic,
-    Underlined,
+    Underlined(Vec<Attr>),
     CrossedOut,
     Span(Vec<Attr>),
 }
@@ -155,13 +155,13 @@ impl RawStyle {
         let raw_style = match name {
             &local_name!("b") => Self::Bold,
             &local_name!("i") => Self::Italic,
-            &local_name!("u") => Self::Underlined,
+            &local_name!("u") => Self::Underlined(attrs.iter().map(Attr::new).collect()),
             &local_name!("s") => Self::CrossedOut,
             &local_name!("span") => Self::Span(attrs.iter().map(Attr::new).collect()),
             unknown => panic!("Unexpected HTML tag kind: {unknown}"),
         };
 
-        if !matches!(raw_style, Self::Span(_)) {
+        if !matches!(raw_style, Self::Span(_) | Self::Underlined(_)) {
             assert!(attrs.is_empty(), "Unexpected attrs for tag: {tag:#?}");
         }
 
@@ -190,7 +190,7 @@ impl StylizedText {
 pub struct Styles {
     bold: bool,
     italic: bool,
-    underlined: bool,
+    underlined: Option<UnderlineStyle>,
     crossed_out: bool,
     spans: BTreeSet<Vec<Attr>>,
 }
@@ -208,7 +208,13 @@ impl Styles {
         match raw_style {
             RawStyle::Bold => self.bold = true,
             RawStyle::Italic => self.italic = true,
-            RawStyle::Underlined => self.underlined = true,
+            RawStyle::Underlined(mut attrs) => {
+                assert!(
+                    attrs.len() <= 1,
+                    "Unexpected number of attrs for <u> {attrs:#?}"
+                );
+                self.underlined = Some(attrs.pop().into());
+            }
             RawStyle::CrossedOut => self.crossed_out = true,
             RawStyle::Span(span) => _ = self.spans.insert(span),
         }
@@ -237,6 +243,24 @@ impl Attr {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum UnderlineStyle {
+    Default,
+    Double,
+}
+
+impl From<Option<Attr>> for UnderlineStyle {
+    fn from(maybe_attr: Option<Attr>) -> Self {
+        match maybe_attr {
+            None => Self::Default,
+            Some(attr) if attr.name == "style" && attr.value == "text-decoration-style:double" => {
+                Self::Double
+            }
+            Some(unknown) => panic!("Unknown attr for <u>: {unknown:#?}"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -251,7 +275,7 @@ mod tests {
                 styles: Styles {
                     bold: true,
                     italic: false,
-                    underlined: false,
+                    underlined: None,
                     crossed_out: false,
                     spans: {},
                 },
@@ -261,7 +285,7 @@ mod tests {
                 styles: Styles {
                     bold: true,
                     italic: false,
-                    underlined: false,
+                    underlined: None,
                     crossed_out: false,
                     spans: {
                         [
