@@ -334,7 +334,19 @@ mod tests {
     }
 
     #[test]
-    fn input_blue_red_text_red_text() {
+    fn optimizations_respect_different_underlines() {
+        // Input -> double underline -> "Double" -> reset -> underline -> " Single"
+        let ansi_text = "\x1b[21mDouble\x1b[0;4m Single";
+        assert_opt_equiv_to_no_opt(ansi_text);
+        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
+        insta::assert_snapshot!(
+            htmlified,
+            @"<u style='text-decoration-style:double'>Double</u><u> Single</u>"
+        );
+    }
+
+    #[test]
+    fn competing_colors() {
         // Input: blue -> red -> "Red" -> red -> " Still Red"
         let ansi_text = "\x1b[34;31mRed\x1b[31m Still Red";
         assert_opt_equiv_to_no_opt(ansi_text);
