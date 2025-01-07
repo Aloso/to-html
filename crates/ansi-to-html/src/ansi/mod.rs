@@ -2,6 +2,8 @@ use std::num::ParseIntError;
 
 use crate::{Color, Error};
 
+pub(crate) mod parse;
+
 /// Iterator that consumes a sequence of numbers and emits ANSI escape sequences.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub(crate) struct AnsiIter<T> {
