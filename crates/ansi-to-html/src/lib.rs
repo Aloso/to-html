@@ -59,7 +59,10 @@ mod error;
 mod esc;
 mod html;
 
-use ansi::{Ansi, AnsiIter};
+use ansi::{
+    parse::{AnsiFragment, AnsiParser},
+    Ansi, AnsiIter,
+};
 use color::Color;
 
 pub use error::Error;
@@ -179,10 +182,10 @@ impl Converter {
         } = *self;
 
         let html = if skip_escape {
-            html::ansi_to_html(input, ansi_regex(), four_bit_var_prefix.to_owned(), theme)?
+            html::ansi_to_html(input, four_bit_var_prefix.to_owned(), theme)?
         } else {
             let input = Esc(input).to_string();
-            html::ansi_to_html(&input, ansi_regex(), four_bit_var_prefix.to_owned(), theme)?
+            html::ansi_to_html(&input, four_bit_var_prefix.to_owned(), theme)?
         };
 
         let html = if skip_optimize { html } else { optimize(&html) };
@@ -204,14 +207,8 @@ pub fn convert_with_opts(input: &str, converter: &Converter) -> Result<String, E
     converter.convert(input)
 }
 
-const ANSI_REGEX: &str = r"\u{1b}(\[[0-9;?]*[A-HJKSTfhilmnsu]|\(B)";
 const OPT_REGEX_1: &str = r"<span \w+='[^']*'></span>|<b></b>|<i></i>|<u></u>|<s></s>";
 const OPT_REGEX_2: &str = "</b><b>|</i><i>|</s><s>";
-
-fn ansi_regex() -> &'static Regex {
-    static REGEX: OnceLock<Regex> = OnceLock::new();
-    REGEX.get_or_init(|| Regex::new(ANSI_REGEX).unwrap())
-}
 
 fn optimize(html: &str) -> String {
     static REGEXES: OnceLock<(Regex, Regex)> = OnceLock::new();

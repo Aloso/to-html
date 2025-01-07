@@ -1,8 +1,6 @@
 use std::fmt::Write;
 
-use regex::Regex;
-
-use crate::{color::FourBitColor, Ansi, AnsiIter, Color, Error, Theme};
+use crate::{color::FourBitColor, Ansi, AnsiFragment, AnsiIter, AnsiParser, Color, Error, Theme};
 
 mod minifier;
 
@@ -106,35 +104,26 @@ enum UnderlineStyle {
 
 /// Convert ANSI sequences to html. This does NOT escape html characters such as `<` and `&`.
 pub fn ansi_to_html(
-    mut input: &str,
-    ansi_regex: &Regex,
+    input: &str,
     four_bit_var_prefix: Option<String>,
     theme: Theme,
 ) -> Result<String, Error> {
     let mut minifier = minifier::Minifier::new(four_bit_var_prefix, theme);
 
-    loop {
-        match ansi_regex.find(input) {
-            Some(m) => {
-                if m.start() > 0 {
-                    let (before, after) = input.split_at(m.start());
-                    minifier.push_str(before);
-                    input = after;
-                }
-
-                let len = m.range().len();
-                input = &input[len..];
-
-                if !m.as_str().ends_with('m') {
+    for fragment in AnsiParser::new(input) {
+        match fragment {
+            AnsiFragment::Sequence(ansi_codes) => {
+                if !ansi_codes.ends_with('m') {
                     continue;
                 }
 
+                let len = ansi_codes.len();
                 if len == 3 {
                     minifier.clear_styles();
                     continue;
                 }
 
-                let nums = &m.as_str()[2..len - 1];
+                let nums = &ansi_codes[2..len - 1];
                 let norm_nums = nums.strip_suffix(';').unwrap_or(nums);
                 let norm_nums = norm_nums.split(';').map(|n| n.parse::<u8>());
 
@@ -142,12 +131,10 @@ pub fn ansi_to_html(
                     minifier.push_ansi_code(ansi?);
                 }
             }
-            None => {
-                minifier.push_str(input);
-                break;
-            }
+            AnsiFragment::Text(text) => minifier.push_str(text),
         }
     }
+
     minifier.push_ansi_code(Ansi::Reset); // make sure all tags are closed
 
     Ok(minifier.into_html())
