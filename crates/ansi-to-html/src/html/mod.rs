@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 use regex::Regex;
 
-use crate::{color::FourBitColor, Ansi, AnsiIter, Color, Error};
+use crate::{color::FourBitColor, Ansi, AnsiIter, Color, Error, Theme};
 
 mod minifier;
 
@@ -19,13 +19,7 @@ enum Style {
 }
 
 impl Style {
-    fn apply(
-        &self,
-        buf: &mut String,
-        var_prefix: Option<&str>,
-        styles: &[Style],
-        dark_theme: bool,
-    ) {
+    fn apply(&self, buf: &mut String, var_prefix: Option<&str>, styles: &[Style], theme: Theme) {
         let str = match self {
             Style::Bold => "<b>",
             Style::Faint => "<span style='opacity:0.67'>",
@@ -48,7 +42,7 @@ impl Style {
                 return;
             }
             Style::Inverted => {
-                let (fg, bg) = Self::get_fg_and_bg(styles, dark_theme);
+                let (fg, bg) = Self::get_fg_and_bg(styles, theme);
                 let fg = fg.into_color_css(var_prefix);
                 let bg = bg.into_color_css(var_prefix);
                 let _ = buf.write_fmt(format_args!("<span style='color:{fg};background:{bg}'>"));
@@ -66,7 +60,7 @@ impl Style {
         }
     }
 
-    fn get_fg_and_bg(styles: &[Style], dark_theme: bool) -> (Color, Color) {
+    fn get_fg_and_bg(styles: &[Style], theme: Theme) -> (Color, Color) {
         let mut fg = None;
         let mut bg = None;
         for style in styles.iter().rev() {
@@ -83,6 +77,7 @@ impl Style {
         // Default inverted fg/bg if missing
         let white = Color::FourBit(FourBitColor::BrightWhite);
         let black = Color::FourBit(FourBitColor::Black);
+        let dark_theme = theme == Theme::Dark;
 
         let fg = fg.unwrap_or(if dark_theme { black } else { white });
         let bg = bg.unwrap_or(if dark_theme { white } else { black });
@@ -114,8 +109,9 @@ pub fn ansi_to_html(
     mut input: &str,
     ansi_regex: &Regex,
     four_bit_var_prefix: Option<String>,
+    theme: Theme,
 ) -> Result<String, Error> {
-    let mut minifier = minifier::Minifier::new(four_bit_var_prefix);
+    let mut minifier = minifier::Minifier::new(four_bit_var_prefix, theme);
 
     loop {
         match ansi_regex.find(input) {
@@ -163,12 +159,14 @@ struct AnsiConverter {
     styles_to_apply: Vec<Style>,
     result: String,
     four_bit_var_prefix: Option<String>,
+    theme: Theme,
 }
 
 impl AnsiConverter {
-    fn new(four_bit_var_prefix: Option<String>) -> Self {
+    fn new(four_bit_var_prefix: Option<String>, theme: Theme) -> Self {
         Self {
             four_bit_var_prefix,
+            theme,
             ..Self::default()
         }
     }
@@ -203,7 +201,7 @@ impl AnsiConverter {
     fn set_style(&mut self, s: Style) {
         if !self.styles.contains(&s) {
             let var_prefix = self.four_bit_var_prefix.as_deref();
-            s.apply(&mut self.result, var_prefix, &self.styles, false);
+            s.apply(&mut self.result, var_prefix, &self.styles, self.theme);
             self.styles.push(s);
         }
     }
@@ -220,7 +218,7 @@ impl AnsiConverter {
         }
         for &style in &self.styles_to_apply {
             let var_prefix = self.four_bit_var_prefix.as_deref();
-            style.apply(&mut self.result, var_prefix, &self.styles, false);
+            style.apply(&mut self.result, var_prefix, &self.styles, self.theme);
             self.styles.push(style);
         }
         self.styles_to_apply.clear();

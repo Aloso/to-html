@@ -98,6 +98,7 @@ pub fn convert(ansi_string: &str) -> Result<String, Error> {
 /// - Escape special HTML characters (`<>&'"`) prior to conversion.
 /// - Apply optimizations to minimize the number of generated HTML tags.
 /// - Use hardcoded colors.
+/// - Uses a dark theme (assumes white text on a dark background).
 ///
 /// ## Example
 ///
@@ -130,6 +131,7 @@ pub struct Converter {
     skip_escape: bool,
     skip_optimize: bool,
     four_bit_var_prefix: Option<String>,
+    theme: Theme,
 }
 
 #[deprecated(note = "this is now a type alias for the `Converter` builder")]
@@ -159,25 +161,42 @@ impl Converter {
         self
     }
 
+    /// Sets the color theme of the terminal.
+    ///
+    /// This is needed to decide how text with the "reverse video" ANSI code is displayed.
+    pub fn theme(mut self, theme: Theme) -> Self {
+        self.theme = theme;
+        self
+    }
+
     /// Converts a string containing ANSI escape codes to HTML.
     pub fn convert(&self, input: &str) -> Result<String, Error> {
         let Converter {
             skip_escape,
             skip_optimize,
             ref four_bit_var_prefix,
+            theme,
         } = *self;
 
         let html = if skip_escape {
-            html::ansi_to_html(input, ansi_regex(), four_bit_var_prefix.to_owned())?
+            html::ansi_to_html(input, ansi_regex(), four_bit_var_prefix.to_owned(), theme)?
         } else {
             let input = Esc(input).to_string();
-            html::ansi_to_html(&input, ansi_regex(), four_bit_var_prefix.to_owned())?
+            html::ansi_to_html(&input, ansi_regex(), four_bit_var_prefix.to_owned(), theme)?
         };
 
         let html = if skip_optimize { html } else { optimize(&html) };
 
         Ok(html)
     }
+}
+
+/// The terminal's color theme.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum Theme {
+    Light,
+    #[default]
+    Dark,
 }
 
 #[deprecated(note = "Use the `convert` method of the `Converter` builder")]

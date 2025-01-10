@@ -1,6 +1,6 @@
 use crate::{
     html::{AnsiConverter, UnderlineStyle},
-    Ansi, Color,
+    Ansi, Color, Theme,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -57,9 +57,9 @@ pub(crate) struct Minifier {
 }
 
 impl Minifier {
-    pub(crate) fn new(var_prefix: Option<String>) -> Self {
+    pub(crate) fn new(var_prefix: Option<String>, theme: Theme) -> Self {
         Self {
-            converter: AnsiConverter::new(var_prefix),
+            converter: AnsiConverter::new(var_prefix, theme),
             ..Self::default()
         }
     }
