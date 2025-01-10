@@ -7,6 +7,8 @@
 //! - bold
 //! - italic
 //! - underlined
+//! - doubly underlined
+//! - reverse video
 //! - crossed out
 //! - faint
 //! - foreground and background colors: 3-bit, 4-bit, 8-bit, truecolor (24-bit)
@@ -15,19 +17,18 @@
 //! and rarely supported by terminals):
 //!
 //! - slow/rapid blink
-//! - reverse video
 //! - conceal
 //! - alternative fonts
 //! - fraktur
-//! - doubly underlined
 //! - proportional spacing
 //! - framed
 //! - encircled
 //! - overlined
-//! - underline color (not in standard)
 //! - ideogram attributes
-//! - superscript, subscript (not in standard)
-//! - bright foreground/background color (not in standard)
+//! - non-standard extensions
+//!   - underline color
+//!   - superscript, subscript
+//!   - bright foreground/background color
 //!
 //! All unsupported ANSI escape codes are stripped from the output.
 //!
