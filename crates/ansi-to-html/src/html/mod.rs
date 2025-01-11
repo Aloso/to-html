@@ -1,6 +1,8 @@
+use std::fmt::Write;
+
 use regex::Regex;
 
-use crate::{Ansi, AnsiIter, Color, Error};
+use crate::{color::FourBitColor, Ansi, AnsiIter, Color, Error, Theme};
 
 mod minifier;
 
@@ -13,12 +15,12 @@ enum Style {
     CrossedOut,
     ForegroundColor(Color),
     BackgroundColor(Color),
+    Inverted,
 }
 
 impl Style {
-    fn apply(&self, buf: &mut String, var_prefix: Option<&str>) {
-        let s;
-        buf.push_str(match self {
+    fn apply(&self, buf: &mut String, var_prefix: Option<&str>, styles: &[Style], theme: Theme) {
+        let str = match self {
             Style::Bold => "<b>",
             Style::Faint => "<span style='opacity:0.67'>",
             Style::Italic => "<i>",
@@ -26,25 +28,72 @@ impl Style {
             Style::Underline(UnderlineStyle::Double) => "<u style='text-decoration-style:double'>",
             Style::CrossedOut => "<s>",
             Style::ForegroundColor(c) => {
-                s = c.into_opening_fg_span(var_prefix);
-                &s
+                let color = c.into_color_css(var_prefix);
+                let inverted = styles.contains(&Style::Inverted);
+                let property = Self::get_property(!inverted);
+                let _ = buf.write_fmt(format_args!("<span style='{property}:{color}'>"));
+                return;
             }
             Style::BackgroundColor(c) => {
-                s = c.into_opening_bg_span(var_prefix);
-                &s
+                let color = c.into_color_css(var_prefix);
+                let inverted = styles.contains(&Style::Inverted);
+                let property = Self::get_property(inverted);
+                let _ = buf.write_fmt(format_args!("<span style='{property}:{color}'>"));
+                return;
             }
-        });
+            Style::Inverted => {
+                let (fg, bg) = Self::get_fg_and_bg(styles, theme);
+                let fg = fg.into_color_css(var_prefix);
+                let bg = bg.into_color_css(var_prefix);
+                let _ = buf.write_fmt(format_args!("<span style='color:{fg};background:{bg}'>"));
+                return;
+            }
+        };
+        buf.push_str(str);
+    }
+
+    fn get_property(is_foreground: bool) -> &'static str {
+        if is_foreground {
+            "color"
+        } else {
+            "background"
+        }
+    }
+
+    fn get_fg_and_bg(styles: &[Style], theme: Theme) -> (Color, Color) {
+        let mut fg = None;
+        let mut bg = None;
+        for style in styles.iter().rev() {
+            match style {
+                Style::ForegroundColor(fg) => bg = Some(*fg),
+                Style::BackgroundColor(bg) => fg = Some(*bg),
+                _ => {}
+            }
+            if let (Some(_), Some(_)) = (fg, bg) {
+                break;
+            }
+        }
+
+        // Default inverted fg/bg if missing
+        let white = Color::FourBit(FourBitColor::BrightWhite);
+        let black = Color::FourBit(FourBitColor::Black);
+        let dark_theme = theme == Theme::Dark;
+
+        let fg = fg.unwrap_or(if dark_theme { black } else { white });
+        let bg = bg.unwrap_or(if dark_theme { white } else { black });
+        (fg, bg)
     }
 
     fn clear(&self, buf: &mut String) {
         buf.push_str(match self {
             Style::Bold => "</b>",
-            Style::Faint => "</span>",
             Style::Italic => "</i>",
             Style::Underline(_) => "</u>",
             Style::CrossedOut => "</s>",
-            Style::ForegroundColor(_) => "</span>",
-            Style::BackgroundColor(_) => "</span>",
+            Style::Faint
+            | Style::ForegroundColor(_)
+            | Style::BackgroundColor(_)
+            | Style::Inverted => "</span>",
         })
     }
 }
@@ -60,8 +109,9 @@ pub fn ansi_to_html(
     mut input: &str,
     ansi_regex: &Regex,
     four_bit_var_prefix: Option<String>,
+    theme: Theme,
 ) -> Result<String, Error> {
-    let mut minifier = minifier::Minifier::new(four_bit_var_prefix);
+    let mut minifier = minifier::Minifier::new(four_bit_var_prefix, theme);
 
     loop {
         match ansi_regex.find(input) {
@@ -109,12 +159,14 @@ struct AnsiConverter {
     styles_to_apply: Vec<Style>,
     result: String,
     four_bit_var_prefix: Option<String>,
+    theme: Theme,
 }
 
 impl AnsiConverter {
-    fn new(four_bit_var_prefix: Option<String>) -> Self {
+    fn new(four_bit_var_prefix: Option<String>, theme: Theme) -> Self {
         Self {
             four_bit_var_prefix,
+            theme,
             ..Self::default()
         }
     }
@@ -127,11 +179,13 @@ impl AnsiConverter {
             Ansi::Faint => self.set_style(Style::Faint),
             Ansi::Italic => self.set_style(Style::Italic),
             Ansi::Underline => self.set_style(Style::Underline(UnderlineStyle::Default)),
+            Ansi::Invert => self.set_style(Style::Inverted),
             Ansi::DoubleUnderline => self.set_style(Style::Underline(UnderlineStyle::Double)),
             Ansi::CrossedOut => self.set_style(Style::CrossedOut),
             Ansi::BoldAndFaintOff => self.clear_style(|&s| s == Style::Bold || s == Style::Faint),
             Ansi::ItalicOff => self.clear_style(|&s| s == Style::Italic),
             Ansi::UnderlineOff => self.clear_style(|&s| matches!(s, Style::Underline(_))),
+            Ansi::InvertOff => self.clear_style(|&s| s == Style::Inverted),
             Ansi::CrossedOutOff => self.clear_style(|&s| s == Style::CrossedOut),
             Ansi::ForgroundColor(c) => self.set_style(Style::ForegroundColor(c)),
             Ansi::DefaultForegroundColor => {
@@ -146,7 +200,8 @@ impl AnsiConverter {
 
     fn set_style(&mut self, s: Style) {
         if !self.styles.contains(&s) {
-            s.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
+            let var_prefix = self.four_bit_var_prefix.as_deref();
+            s.apply(&mut self.result, var_prefix, &self.styles, self.theme);
             self.styles.push(s);
         }
     }
@@ -162,7 +217,8 @@ impl AnsiConverter {
             }
         }
         for &style in &self.styles_to_apply {
-            style.apply(&mut self.result, self.four_bit_var_prefix.as_deref());
+            let var_prefix = self.four_bit_var_prefix.as_deref();
+            style.apply(&mut self.result, var_prefix, &self.styles, self.theme);
             self.styles.push(style);
         }
         self.styles_to_apply.clear();

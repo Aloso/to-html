@@ -8,7 +8,7 @@
 
 use std::path::PathBuf;
 
-use ansi_to_html::Esc;
+use ansi_to_html::{Esc, Theme};
 
 mod cli;
 mod config;
@@ -23,6 +23,7 @@ pub struct Opts {
     pub prompt: ShellPrompt,
     pub doc: bool,
     pub no_prompt: bool,
+    pub theme: Theme,
 }
 
 impl Opts {
@@ -37,6 +38,7 @@ impl Opts {
                     full_document: config_doc,
                     highlight: config_highlight,
                     css_prefix: config_prefix,
+                    theme: config_theme,
                 },
         } = config::load()?;
 
@@ -49,6 +51,7 @@ impl Opts {
             cwd: cli_cwd,
             doc: cli_doc,
             no_prompt: cli_no_prompt,
+            theme,
         } = cli::parse();
 
         let prompt = if cli_cwd || config_cwd {
@@ -72,6 +75,7 @@ impl Opts {
             prompt,
             doc: cli_doc || config_doc,
             no_prompt: cli_no_prompt,
+            theme: theme.map(Into::into).unwrap_or(config_theme.into()),
         })
     }
 }
@@ -80,4 +84,22 @@ impl Opts {
 pub enum ShellPrompt {
     Arrow,
     Cwd { home: Option<PathBuf> },
+}
+
+impl From<cli::Theme> for Theme {
+    fn from(value: cli::Theme) -> Self {
+        match value {
+            cli::Theme::Light => Theme::Light,
+            cli::Theme::Dark => Theme::Dark,
+        }
+    }
+}
+
+impl From<config::Theme> for Theme {
+    fn from(value: config::Theme) -> Self {
+        match value {
+            config::Theme::Light => Theme::Light,
+            config::Theme::Dark => Theme::Dark,
+        }
+    }
 }

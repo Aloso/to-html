@@ -80,6 +80,7 @@ cwd = false            # override with --cwd
 full_document = false  # override with --doc
 highlight = []         # override with --highlight <COMMANDS>
 css_prefix = ""        # override with --prefix <PREFIX>
+theme = "dark"         # override with --theme <THEME>
 ```
 
 ## ANSI support 🎨
@@ -95,7 +96,7 @@ If you need more advanced terminal features on your website, may I suggest to us
 Include this on your website to get syntax highlighting for the prompt:
 
 <details>
-<summary>Click to expand stylesheet</summary>
+<summary>Stylesheet (<b>dark mode</b>)</summary>
 
 ```css
 .terminal {
@@ -141,6 +142,56 @@ Include this on your website to get syntax highlighting for the prompt:
 ```
 
 </details>
+
+<details>
+<summary>Stylesheet (<b>light mode</b>)</summary>
+
+```css
+.terminal {
+  background-color: #eeeeee;
+  overflow: auto;
+  color: black;
+  line-height: 120%;
+}
+
+.terminal .shell {
+  color: #1fa21f;
+  user-select: none;
+  pointer-events: none;
+}
+.terminal .cmd {
+  color: #1a71c1;
+}
+.terminal .hl {
+  color: #00c4c4;
+  font-weight: bold;
+}
+.terminal .arg {
+  color: black;
+}
+.terminal .str {
+  color: #ce6a00;
+}
+.terminal .pipe,
+.terminal .punct {
+  color: #819700;
+}
+.terminal .flag {
+  color: #b33742;
+}
+.terminal .esc {
+  color: #9f1adb;
+  font-weight: bold;
+}
+.terminal .caret {
+  background-color: black;
+  user-select: none;
+}
+```
+
+</details>
+
+The theme defaults to `dark`, but can be changed with `--theme light`.
 
 The default terminal colors can be overridden with CSS classes, for example:
 

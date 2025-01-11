@@ -52,4 +52,14 @@ pub struct Output {
     #[serde(default)]
     pub highlight: Vec<String>,
     pub css_prefix: Option<String>,
+    #[serde(default)]
+    pub theme: Theme,
+}
+
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Theme {
+    Light,
+    #[default]
+    Dark,
 }

@@ -12,27 +12,28 @@ The supported styles are:
 - bold
 - italic
 - underlined
+- doubly underlined
 - crossed out
 - faint
+- reverse video
 - foreground and background colors: 3-bit, 4-bit, 8-bit, truecolor (24-bit)
 
 **Not** supported SGR parameters (note that most of these are niche features
 and rarely supported by terminals):
 
 - slow/rapid blink
-- reverse video
 - conceal
 - alternative fonts
 - fraktur
-- doubly underlined
 - proportional spacing
 - framed
 - encircled
 - overlined
-- underline color (not in standard)
 - ideogram attributes
-- superscript, subscript (not in standard)
-- bright foreground/background color (not in standard)
+- non-standard extensions
+  - underline color
+  - superscript, subscript
+  - bright foreground/background color
 
 All unsupported ANSI escape codes are stripped from the output.
 

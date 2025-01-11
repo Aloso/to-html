@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 pub fn parse() -> Cli {
     Cli::parse()
@@ -45,4 +45,13 @@ pub struct Cli {
     /// Output a complete HTML document, not just a `<pre>`
     #[arg(short, long)]
     pub doc: bool,
+    /// Set the terminal's color theme [default: dark]
+    #[arg(short, long)]
+    pub theme: Option<Theme>,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+pub enum Theme {
+    Light,
+    Dark,
 }

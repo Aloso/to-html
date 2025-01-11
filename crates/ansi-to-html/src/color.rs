@@ -82,23 +82,27 @@ impl Color {
         })
     }
 
-    pub(crate) fn into_opening_fg_span(self, var_prefix: Option<&str>) -> String {
-        self.into_opening_span(var_prefix, true)
-    }
+    pub(crate) fn into_color_css(self, var_prefix: Option<&str>) -> impl fmt::Display + '_ {
+        struct CssDisplay<'a> {
+            color: Color,
+            var_prefix: Option<&'a str>,
+        }
 
-    pub(crate) fn into_opening_bg_span(self, var_prefix: Option<&str>) -> String {
-        self.into_opening_span(var_prefix, false)
-    }
+        impl fmt::Display for CssDisplay<'_> {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                let prefix = self.var_prefix.unwrap_or_default();
+                let color = self.color;
+                if let Color::FourBit(four_bit) = color {
+                    write!(f, "var(--{prefix}{four_bit},{color})")
+                } else {
+                    color.fmt(f)
+                }
+            }
+        }
 
-    pub(crate) fn into_opening_span(self, var_prefix: Option<&str>, is_fg: bool) -> String {
-        if let Self::FourBit(four_bit) = self {
-            let fg_vs_bg = if is_fg { "color" } else { "background" };
-            let prefix = var_prefix.unwrap_or_default();
-            format!("<span style='{fg_vs_bg}:var(--{prefix}{four_bit},{self})'>")
-        } else if is_fg {
-            format!("<span style='color:{self}'>")
-        } else {
-            format!("<span style='background:{self}'>")
+        CssDisplay {
+            color: self,
+            var_prefix,
         }
     }
 }

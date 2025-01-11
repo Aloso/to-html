@@ -1,6 +1,6 @@
 use crate::{
     html::{AnsiConverter, UnderlineStyle},
-    Ansi, Color,
+    Ansi, Color, Theme,
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -12,6 +12,7 @@ struct CurrentStyling {
     italic: bool,
     underline: Option<UnderlineStyle>,
     crossed_out: bool,
+    inverted: bool,
 }
 
 impl CurrentStyling {
@@ -24,6 +25,7 @@ impl CurrentStyling {
             Ansi::Italic => self.italic = true,
             Ansi::Underline => self.underline = Some(UnderlineStyle::Default),
             Ansi::DoubleUnderline => self.underline = Some(UnderlineStyle::Double),
+            Ansi::Invert => self.inverted = true,
             Ansi::CrossedOut => self.crossed_out = true,
             Ansi::BoldAndFaintOff => {
                 self.bold = false;
@@ -31,6 +33,7 @@ impl CurrentStyling {
             }
             Ansi::ItalicOff => self.italic = false,
             Ansi::UnderlineOff => self.underline = None,
+            Ansi::InvertOff => self.inverted = false,
             Ansi::CrossedOutOff => self.crossed_out = false,
             Ansi::ForgroundColor(c) => self.fg = Some(c),
             Ansi::DefaultForegroundColor => self.fg = None,
@@ -54,9 +57,9 @@ pub(crate) struct Minifier {
 }
 
 impl Minifier {
-    pub(crate) fn new(var_prefix: Option<String>) -> Self {
+    pub(crate) fn new(var_prefix: Option<String>, theme: Theme) -> Self {
         Self {
-            converter: AnsiConverter::new(var_prefix),
+            converter: AnsiConverter::new(var_prefix, theme),
             ..Self::default()
         }
     }

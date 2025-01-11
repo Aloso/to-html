@@ -1,4 +1,4 @@
-use ansi_to_html::Esc;
+use ansi_to_html::{Esc, Theme};
 use std::{borrow::Cow, error, fmt::Write};
 
 pub mod cmd;
@@ -52,7 +52,7 @@ fn main_inner() -> Result<(), StdError> {
 </head>
 <body>",
             Esc(title),
-            make_style(&opts.prefix),
+            make_style(&opts.prefix, opts.theme),
         )?;
     }
 
@@ -91,7 +91,9 @@ fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdEr
     } else {
         Some(opts.prefix.to_owned())
     };
-    let converter = ansi_to_html::Converter::new().four_bit_var_prefix(var_prefix);
+    let converter = ansi_to_html::Converter::new()
+        .four_bit_var_prefix(var_prefix)
+        .theme(opts.theme);
 
     let mut cmd = String::new();
     let shell = opts.shell.as_deref().or_else(|| {
@@ -152,12 +154,18 @@ fn shell_prompt(buf: &mut String, opts: &Opts) -> Result<(), StdError> {
     Ok(())
 }
 
-fn make_style(prefix: &str) -> String {
-    format!(
+fn make_style(prefix: &str, theme: Theme) -> String {
+    macro_rules! format_colors {
+        ($s:literal $(, $name:ident)* $(,)?) => {
+            format!($s, p = prefix, $( $name = get_color(Color::$name, theme) ),*)
+        };
+    }
+
+    format_colors!(
         "
 body {{
-  background-color: #141414;
-  color: white;
+  background-color: {Bg};
+  color: {Fg};
 }}
 .{p}terminal {{
   overflow: auto;
@@ -165,38 +173,93 @@ body {{
 }}
 
 .{p}terminal .{p}shell {{
-  color: #32d132;
+  color: {Shell};
   user-select: none;
   pointer-events: none;
 }}
 .{p}terminal .{p}cmd {{
-  color: #419df3;
+  color: {Cmd};
 }}
 .{p}terminal .{p}hl {{
-  color: #00ffff;
+  color: {Hl};
   font-weight: bold;
 }}
 .{p}terminal .{p}arg {{
-  color: white;
+  color: {Arg};
 }}
 .{p}terminal .{p}str {{
-  color: #ffba24;
+  color: {Str};
 }}
 .{p}terminal .{p}pipe, .{p}terminal .{p}punct {{
-  color: #a2be00;
+  color: {Punct};
 }}
 .{p}terminal .{p}flag {{
-  color: #ff7167;
+  color: {Flag};
 }}
 .{p}terminal .{p}esc {{
-  color: #d558f5;
+  color: {Esc};
   font-weight: bold;
 }}
 .{p}terminal .{p}caret {{
-  background-color: white;
+  background-color: {CaretBg};
   user-select: none;
 }}
 ",
-        p = prefix,
+        Bg,
+        Fg,
+        Shell,
+        Cmd,
+        Hl,
+        Arg,
+        Str,
+        Punct,
+        Flag,
+        Esc,
+        CaretBg,
     )
+}
+
+enum Color {
+    Bg,
+    Fg,
+    Shell,
+    Cmd,
+    Hl,
+    Arg,
+    Str,
+    Punct,
+    Flag,
+    Esc,
+    CaretBg,
+}
+
+fn get_color(color: Color, theme: Theme) -> &'static str {
+    match theme {
+        Theme::Dark => match color {
+            Color::Bg => "#141414",
+            Color::Fg => "white",
+            Color::Shell => "#32d132",
+            Color::Cmd => "#419df3",
+            Color::Hl => "#00ffff",
+            Color::Arg => "white",
+            Color::Str => "#ffba24",
+            Color::Punct => "#a2be00",
+            Color::Flag => "#ff7167",
+            Color::Esc => "#d558f5",
+            Color::CaretBg => "white",
+        },
+        Theme::Light => match color {
+            Color::Bg => "#eeeeee",
+            Color::Fg => "black",
+            Color::Shell => "#1fa21f",
+            Color::Cmd => "#1a71c1",
+            Color::Hl => "#00c4c4",
+            Color::Arg => "black",
+            Color::Str => "#ce6a00",
+            Color::Punct => "#819700",
+            Color::Flag => "#b33742",
+            Color::Esc => "#9f1adb",
+            Color::CaretBg => "black",
+        },
+    }
 }
