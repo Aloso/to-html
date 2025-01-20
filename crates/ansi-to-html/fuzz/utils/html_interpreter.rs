@@ -332,4 +332,28 @@ mod tests {
         ]
         "#);
     }
+
+    #[test]
+    fn input_blue_red_text_red_text() {
+        // Input: blue -> red -> "Red" -> red -> " Still Red"
+        let ansi_text = "\x1b[34;31mRed\x1b[31m Still Red";
+        assert_opt_equiv_to_no_opt(ansi_text);
+        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
+        insta::assert_snapshot!(
+            htmlified,
+            @"<span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
+        );
+    }
+
+    #[test]
+    fn input_red_text_blue_red_text() {
+        // Input: red -> "Red" -> blue -> red -> " Still Red"
+        let ansi_text = "\x1b[31mRed\x1b[34;31m Still Red";
+        assert_opt_equiv_to_no_opt(ansi_text);
+        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
+        insta::assert_snapshot!(
+            htmlified,
+            @"<span style='color:var(--red,#a00)'>Red Still Red</span>"
+        );
+    }
 }

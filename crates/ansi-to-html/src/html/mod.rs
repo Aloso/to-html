@@ -186,15 +186,14 @@ impl AnsiConverter {
     }
 
     fn set_style(&mut self, s: Style) {
-        if !self.styles.contains(&s) {
-            let var_prefix = self.four_bit_var_prefix.as_deref();
-            s.apply(&mut self.result, var_prefix, &self.styles, self.theme);
-            self.styles.push(s);
-        }
+        let var_prefix = self.four_bit_var_prefix.as_deref();
+        s.apply(&mut self.result, var_prefix, &self.styles, self.theme);
+        self.styles.push(s);
     }
 
     fn clear_style(&mut self, cond: impl Fn(&Style) -> bool) {
         if let Some((i, _)) = self.styles.iter().enumerate().find(|&(_, s)| cond(s)) {
+            // Unwind the stack of styles past the style being cleared
             while self.styles.len() > i {
                 let style = self.styles.pop().unwrap();
                 style.clear(&mut self.result);
@@ -203,6 +202,7 @@ impl AnsiConverter {
                 }
             }
         }
+        // Re-wind back styles that are still set
         for &style in &self.styles_to_apply {
             let var_prefix = self.four_bit_var_prefix.as_deref();
             style.apply(&mut self.result, var_prefix, &self.styles, self.theme);
