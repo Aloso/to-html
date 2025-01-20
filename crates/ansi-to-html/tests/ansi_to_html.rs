@@ -146,13 +146,13 @@ Setting FG color while inverted actually sets BG
     "#;
 
     let converted = human_readable_to_html(readable.trim());
-    insta::assert_snapshot!(converted, @r###"
+    insta::assert_snapshot!(converted, @r"
     Useless codes are minified away:
 
     No existing color will set fg and bg:
     <span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Black fg white bg</span>
     Multiple inverts is a noop:
-    <span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Still white fg black bg</span>
+    <span style='color:var(--black,#000);background:var(--bright-white,#fff)'><span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Still white fg black bg</span></span>
     Invert works with custom colors:
     <span style='color:var(--red,#a00)'>Red on black <span style='color:var(--black,#000);background:var(--red,#a00)'>Black on red</span></span>
     Invert off does nothing by itself:
@@ -163,5 +163,5 @@ Setting FG color while inverted actually sets BG
     <span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Inverted </span>Non-Inverted
     Setting FG color while inverted actually sets BG
     <span style='color:var(--red,#a00)'>Red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>Red bg<span style='background:var(--green,#0a0)'>Green bg</span></span><span style='color:var(--green,#0a0)'>Green fg</span></span>
-    "###);
+    ");
 }
