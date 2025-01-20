@@ -356,4 +356,16 @@ mod tests {
             @"<span style='color:var(--red,#a00)'>Red Still Red</span>"
         );
     }
+
+    #[test]
+    fn input_uline_blue_red_ulineoff_text_red_text() {
+        // Input: underline -> blue -> red -> underline off -> "Red" -> red -> " Still Red"
+        let ansi_text = "\x1b[4;34;31;24mRed\x1b[31m Still Red";
+        assert_opt_equiv_to_no_opt(ansi_text);
+        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
+        insta::assert_snapshot!(
+            htmlified,
+            @"<u><span style='color:var(--blue,#00a)'></span></u><span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
+        );
+    }
 }

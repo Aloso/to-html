@@ -203,7 +203,7 @@ impl AnsiConverter {
             }
         }
         // Re-wind back styles that are still set
-        for &style in &self.styles_to_apply {
+        for &style in self.styles_to_apply.iter().rev() {
             let var_prefix = self.four_bit_var_prefix.as_deref();
             style.apply(&mut self.result, var_prefix, &self.styles, self.theme);
             self.styles.push(style);
