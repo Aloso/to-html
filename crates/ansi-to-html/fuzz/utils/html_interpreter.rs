@@ -399,4 +399,11 @@ mod tests {
             @"<u><span style='color:var(--blue,#00a)'></span></u><span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
         );
     }
+
+    #[test]
+    fn debug_this() {
+        // Input: blue bg -> black bg -> invert -> A -> black bg -> B
+        let ansi_text = "\u{1b}[44;40;7mA\u{1b}[40mB";
+        assert_opt_equiv_to_no_opt(ansi_text);
+    }
 }
