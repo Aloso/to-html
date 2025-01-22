@@ -234,6 +234,6 @@ fn fg_after_inv_acts_as_bg() {
     );
     insta::assert_snapshot!(
         converted,
-        @"<span style='color:var(--red,#a00)'>red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>inv red fg<span style='background:var(--green,#0a0)'>inv green fg</span></span><span style='color:var(--green,#0a0)'>green fg</span></span>"
+        @"<span style='color:var(--red,#a00)'>red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>inv red fg</span></span><span style='color:var(--black,#000);background:var(--bright-white,#fff)'><span style='background:var(--green,#0a0)'>inv green fg</span></span><span style='color:var(--green,#0a0)'>green fg</span>"
     );
 }
