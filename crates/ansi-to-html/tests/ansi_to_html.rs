@@ -125,43 +125,69 @@ fn underlines() {
 }
 
 #[test]
-fn invert_ansi_code() {
-    let readable = r#"
-Useless codes are minified away:
-{{ inv }}{{ inv_off }}{{ res }}
-No existing color will set fg and bg:
-{{ inv }}Black fg white bg{{ res }}
-Multiple inverts is a noop:
-{{ inv }}{{ inv }}Still white fg black bg{{ res }}
-Invert works with custom colors:
-{{ red }}Red on black {{ inv }}Black on red{{ res }}
-Invert off does nothing by itself:
-{{ inv_off }}Plain
-Invert off disables invert:
-{{ inv }}Black on white {{ inv_off }}White on black{{ res }}
-Multiple invert offs count as one:
-{{ inv }}Inverted {{ inv_off }}{{ inv_off }}Non-Inverted{{ res }}
-Setting FG color while inverted actually sets BG
-{{ red }}Red fg{{ inv }}Red bg{{ green }}Green bg{{ inv_off }}Green fg
-    "#;
+fn useless_codes_are_minified_away() {
+    let converted = human_readable_to_html("{{ inv }}{{ inv_off }}");
+    insta::assert_snapshot!(converted, @"");
+}
 
-    let converted = human_readable_to_html(readable.trim());
-    insta::assert_snapshot!(converted, @r"
-    Useless codes are minified away:
+#[test]
+fn invert_w_o_color_sets_fg_and_bg() {
+    let converted = human_readable_to_html("{{ inv }}inverted");
+    insta::assert_snapshot!(
+        converted,
+        @"<span style='color:var(--black,#000);background:var(--bright-white,#fff)'>inverted</span>"
+    );
+}
 
-    No existing color will set fg and bg:
-    <span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Black fg white bg</span>
-    Multiple inverts is a noop:
-    <span style='color:var(--black,#000);background:var(--bright-white,#fff)'><span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Still white fg black bg</span></span>
-    Invert works with custom colors:
-    <span style='color:var(--red,#a00)'>Red on black <span style='color:var(--black,#000);background:var(--red,#a00)'>Black on red</span></span>
-    Invert off does nothing by itself:
-    Plain
-    Invert off disables invert:
-    <span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Black on white </span>White on black
-    Multiple invert offs count as one:
-    <span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Inverted </span>Non-Inverted
-    Setting FG color while inverted actually sets BG
-    <span style='color:var(--red,#a00)'>Red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>Red bg<span style='background:var(--green,#0a0)'>Green bg</span></span><span style='color:var(--green,#0a0)'>Green fg</span></span>
-    ");
+#[test]
+fn multiple_inverts_is_noop() {
+    let converted = human_readable_to_html("{{ inv }}{{ inv }}still inverted");
+    insta::assert_snapshot!(
+        converted,
+        @"<span style='color:var(--black,#000);background:var(--bright-white,#fff)'><span style='color:var(--black,#000);background:var(--bright-white,#fff)'>still inverted</span></span>"
+    );
+}
+
+#[test]
+fn invert_with_custom_fg() {
+    let converted = human_readable_to_html("{{ red }}red fg{{ inv }}inv red fg");
+    insta::assert_snapshot!(
+        converted,
+        @"<span style='color:var(--red,#a00)'>red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>inv red fg</span></span>"
+    );
+}
+
+#[test]
+fn inv_off_w_o_inv_is_a_noop() {
+    let converted = human_readable_to_html("{{ inv_off }}plain");
+    insta::assert_snapshot!(converted, @"plain");
+}
+
+#[test]
+fn inv_off_disables_inv() {
+    let converted = human_readable_to_html("{{ inv }}inverted{{ inv_off }}plain");
+    insta::assert_snapshot!(
+        converted,
+        @"<span style='color:var(--black,#000);background:var(--bright-white,#fff)'>inverted</span>plain"
+    );
+}
+
+#[test]
+fn consecutive_inv_off_count_as_one() {
+    let converted = human_readable_to_html("{{ inv }}inverted{{ inv_off }}{{ inv_off }}plain");
+    insta::assert_snapshot!(
+        converted,
+        @"<span style='color:var(--black,#000);background:var(--bright-white,#fff)'>inverted</span>plain"
+    );
+}
+
+#[test]
+fn fg_after_inv_acts_as_bg() {
+    let converted = human_readable_to_html(
+        "{{ red }}red fg{{ inv }}inv red fg{{ green }}inv green fg{{ inv_off }}green fg",
+    );
+    insta::assert_snapshot!(
+        converted,
+        @"<span style='color:var(--red,#a00)'>red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>inv red fg<span style='background:var(--green,#0a0)'>inv green fg</span></span><span style='color:var(--green,#0a0)'>green fg</span></span>"
+    );
 }
