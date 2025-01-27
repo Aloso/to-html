@@ -43,3 +43,8 @@ opt-level = 1
 [profile.release]
 lto = "thin"
 strip = true
+
+[profile.release-debug]
+inherits = "release"
+strip = false
+debug = true
