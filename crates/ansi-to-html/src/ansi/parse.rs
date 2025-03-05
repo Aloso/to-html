@@ -65,11 +65,13 @@ impl<'text> Iterator for AnsiParser<'text> {
                 }
             }
         } else {
-            while let Some(b) = self.next_byte() {
-                if b == ESCAPE {
-                    break;
-                }
-            }
+            // Increment past the byte we just checked
+            self.inc();
+            // Find the next ESCAPE if there is one and adjust our index accordingly
+            match memchr::memchr(ESCAPE, &self.text.as_bytes()[start_idx..]) {
+                Some(end_offset) => self.index += end_offset - 1,
+                None => self.index = self.text.len(),
+            };
             Some(AnsiFragment::Text(&self.text[start_idx..self.index]))
         }
     }
