@@ -13,6 +13,7 @@ license = "MIT"
 keywords = ["color", "cli", "terminal", "html"]
 
 [dependencies]
+memchr = "2.7.4"
 regex = "1.7.3"
 
 [features]
