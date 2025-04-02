@@ -32,16 +32,34 @@ pub struct Esc<T: AsRef<str>>(pub T);
 
 impl<T: AsRef<str>> fmt::Display for Esc<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for c in self.0.as_ref().chars() {
-            match c {
-                '&' => fmt::Display::fmt("&amp;", f)?,
-                '<' => fmt::Display::fmt("&lt;", f)?,
-                '>' => fmt::Display::fmt("&gt;", f)?,
-                '"' => fmt::Display::fmt("&quot;", f)?,
-                '\'' => fmt::Display::fmt("&#39;", f)?,
-                c => fmt::Display::fmt(&c, f)?,
-            }
+        let mut s = self.0.as_ref();
+        while let Some(pos) = s
+            .as_bytes()
+            .iter()
+            .position(|b| [b'&', b'<', b'>', b'"', b'\''].contains(b))
+        {
+            f.write_str(&s[..pos])?;
+            let escaped = match s.as_bytes()[pos] {
+                b'&' => "&amp;",
+                b'<' => "&lt;",
+                b'>' => "&gt;",
+                b'"' => "&quot;",
+                b'\'' => "&#39;",
+                _ => unreachable!("We covered all patterns that match this position"),
+            };
+            f.write_str(escaped)?;
+            s = &s[pos + 1..];
         }
-        Ok(())
+        f.write_str(s)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_special_chars() {
+        assert_eq!(Esc("&<>\"'").to_string(), "&amp;&lt;&gt;&quot;&#39;");
     }
 }
