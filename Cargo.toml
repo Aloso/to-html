@@ -15,10 +15,7 @@ exclude = ["docs"]
 resolver = "2"
 
 [workspace]
-members = [
-    "crates/*",
-    "crates/ansi-to-html/fuzz",
-]
+members = ["crates/*", "crates/ansi-to-html/fuzz"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,7 +27,7 @@ dirs-next = "2.0.0"
 logos = "0.13.0"
 serde = { version = "1.0.159", features = ["derive"] }
 toml = "0.8.8"
-thiserror = "1.0.40"
+thiserror = "2.0.12"
 libc = "0.2"
 
 [build-dependencies]
