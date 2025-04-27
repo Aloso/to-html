@@ -29,7 +29,7 @@ fn human_readable_to_ansi(s: &str) -> String {
                 "red" => out.push_str("31"),
                 "green" => out.push_str("32"),
                 // 8-bit foreground colors
-                "8_240" | "8_246" | "8_249" => {
+                code if code.starts_with("8_") => {
                     let num = inner.strip_prefix("8_").unwrap();
                     out.push_str("38;5;");
                     out.push_str(num);
@@ -122,6 +122,52 @@ fn underlines() {
         no_opt,
         @"<u>Single</u> <u style='text-decoration-style:double'>Double</u>"
     );
+}
+
+#[test]
+fn ansi_8bit_specification_of_4bit_color() {
+    let readable = r#"
+The first sixteen colors in the 8-bit palette are de facto standardized as the old 4-bit palette:
+{{ 8_0 }}black{{ res }}
+{{ 8_1 }}red{{ res }}
+{{ 8_2 }}green{{ res }}
+{{ 8_3 }}yellow{{ res }}
+{{ 8_4 }}blue{{ res }}
+{{ 8_5 }}magenta{{ res }}
+{{ 8_6 }}cyan{{ res }}
+{{ 8_7 }}white{{ res }}
+Where the bright colors, too, are bright in the overlap of the 8-bit and 4-bit palettes:
+{{ 8_8 }}bright black{{ res }}
+{{ 8_9 }}bright red{{ res }}
+{{ 8_10 }}bright green{{ res }}
+{{ 8_11 }}bright yellow{{ res }}
+{{ 8_12 }}bright blue{{ res }}
+{{ 8_13 }}bright magenta{{ res }}
+{{ 8_14 }}bright cyan{{ res }}
+{{ 8_15 }}bright white{{ res }}
+    "#;
+
+    let converted = human_readable_to_html(readable.trim());
+    insta::assert_snapshot!(converted, @r"
+    The first sixteen colors in the 8-bit palette are de facto standardized as the old 4-bit palette:
+    <span style='color:var(--black,#000)'>black</span>
+    <span style='color:var(--red,#a00)'>red</span>
+    <span style='color:var(--green,#0a0)'>green</span>
+    <span style='color:var(--yellow,#a60)'>yellow</span>
+    <span style='color:var(--blue,#00a)'>blue</span>
+    <span style='color:var(--magenta,#a0a)'>magenta</span>
+    <span style='color:var(--cyan,#0aa)'>cyan</span>
+    <span style='color:var(--white,#aaa)'>white</span>
+    Where the bright colors, too, are bright in the overlap of the 8-bit and 4-bit palettes:
+    <span style='color:var(--bright-black,#555)'>bright black</span>
+    <span style='color:var(--bright-red,#f55)'>bright red</span>
+    <span style='color:var(--bright-green,#5f5)'>bright green</span>
+    <span style='color:var(--bright-yellow,#ff5)'>bright yellow</span>
+    <span style='color:var(--bright-blue,#55f)'>bright blue</span>
+    <span style='color:var(--bright-magenta,#f5f)'>bright magenta</span>
+    <span style='color:var(--bright-cyan,#5ff)'>bright cyan</span>
+    <span style='color:var(--bright-white,#fff)'>bright white</span>
+    ");
 }
 
 #[test]

@@ -61,7 +61,15 @@ impl Color {
                     .next()
                     .transpose()?
                     .ok_or_else(Error::invalid_ansi("Missing 8-bit color"))?;
-                Color::EightBit(EightBitColor::new(color))
+                // While not described specifically by ECMA-48 or ISO 8613-6/ITU T.416,
+                // the xterm256 palette is structured so the first 16 colors are the same
+                // as the colors of the 4-bit palette. This is true of xterm's 88-color
+                // palette as well.
+                match color {
+                    0..=7 => Color::parse_4bit(color)?,
+                    8..=15 => Color::parse_4bit_bright(color - 8)?,
+                    _ => Color::EightBit(EightBitColor::new(color)),
+                }
             }
             2 => {
                 let r = iter.next().transpose()?;
