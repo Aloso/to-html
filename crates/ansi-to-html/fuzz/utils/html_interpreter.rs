@@ -341,7 +341,7 @@ mod tests {
         let htmlified = ansi_to_html::convert(ansi_text).unwrap();
         insta::assert_snapshot!(
             htmlified,
-            @"<span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
+            @"<span style='color:var(--red,#a00)'>Red Still Red</span>"
         );
     }
 
@@ -365,7 +365,7 @@ mod tests {
         let htmlified = ansi_to_html::convert(ansi_text).unwrap();
         insta::assert_snapshot!(
             htmlified,
-            @"<u><span style='color:var(--blue,#00a)'></span></u><span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
+            @"<u></u><span style='color:var(--red,#a00)'>Red Still Red</span>"
         );
     }
 }

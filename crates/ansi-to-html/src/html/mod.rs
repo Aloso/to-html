@@ -159,29 +159,61 @@ impl AnsiConverter {
     }
 
     fn consume_ansi_code(&mut self, ansi: Ansi) {
+        fn is_underline(s: &Style) -> bool {
+            matches!(&s, Style::Underline(_))
+        }
+
+        fn is_fg_color(s: &Style) -> bool {
+            matches!(&s, Style::ForegroundColor(_))
+        }
+
+        fn is_bg_color(s: &Style) -> bool {
+            matches!(&s, Style::BackgroundColor(_))
+        }
+
         match ansi {
             Ansi::Noop => {}
             Ansi::Reset => self.clear_style(|_| true),
-            Ansi::Bold => self.set_style(Style::Bold),
-            Ansi::Faint => self.set_style(Style::Faint),
-            Ansi::Italic => self.set_style(Style::Italic),
-            Ansi::Underline => self.set_style(Style::Underline(UnderlineStyle::Default)),
+            Ansi::Bold => {
+                if !self.styles.contains(&Style::Bold) {
+                    self.set_style(Style::Bold);
+                }
+            }
+            Ansi::Faint => {
+                if !self.styles.contains(&Style::Faint) {
+                    self.set_style(Style::Faint);
+                }
+            }
+            Ansi::Italic => {
+                if !self.styles.contains(&Style::Italic) {
+                    self.set_style(Style::Italic);
+                }
+            }
+            Ansi::Underline => {
+                self.clear_style(is_underline);
+                self.set_style(Style::Underline(UnderlineStyle::Default));
+            }
             Ansi::Invert => self.set_style(Style::Inverted),
-            Ansi::DoubleUnderline => self.set_style(Style::Underline(UnderlineStyle::Double)),
+            Ansi::DoubleUnderline => {
+                self.clear_style(is_underline);
+                self.set_style(Style::Underline(UnderlineStyle::Double))
+            }
             Ansi::CrossedOut => self.set_style(Style::CrossedOut),
             Ansi::BoldAndFaintOff => self.clear_style(|&s| s == Style::Bold || s == Style::Faint),
             Ansi::ItalicOff => self.clear_style(|&s| s == Style::Italic),
-            Ansi::UnderlineOff => self.clear_style(|&s| matches!(s, Style::Underline(_))),
+            Ansi::UnderlineOff => self.clear_style(is_underline),
             Ansi::InvertOff => self.clear_style(|&s| s == Style::Inverted),
             Ansi::CrossedOutOff => self.clear_style(|&s| s == Style::CrossedOut),
-            Ansi::ForgroundColor(c) => self.set_style(Style::ForegroundColor(c)),
-            Ansi::DefaultForegroundColor => {
-                self.clear_style(|&s| matches!(s, Style::ForegroundColor(_)))
+            Ansi::ForgroundColor(c) => {
+                self.clear_style(is_fg_color);
+                self.set_style(Style::ForegroundColor(c));
             }
-            Ansi::BackgroundColor(c) => self.set_style(Style::BackgroundColor(c)),
-            Ansi::DefaultBackgroundColor => {
-                self.clear_style(|&s| matches!(s, Style::BackgroundColor(_)))
+            Ansi::DefaultForegroundColor => self.clear_style(is_fg_color),
+            Ansi::BackgroundColor(c) => {
+                self.clear_style(is_bg_color);
+                self.set_style(Style::BackgroundColor(c));
             }
+            Ansi::DefaultBackgroundColor => self.clear_style(is_bg_color),
         }
     }
 
