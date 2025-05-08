@@ -21,7 +21,7 @@ default = []
 lazy-init = []
 
 [dev-dependencies]
-divan = "0.1.16"
+divan = "0.1.21"
 flate2 = "1.0.35"
 insta = "1.29.0"
 
