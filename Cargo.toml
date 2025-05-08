@@ -24,7 +24,7 @@ fake-tty = { path = "./crates/fake-tty", version = "0.3.1" }
 ansi-to-html = { path = "./crates/ansi-to-html", version = "0.2.2" }
 clap = { version = "4.1.10", features = ["derive", "wrap_help"] }
 dirs-next = "2.0.0"
-logos = "0.13.0"
+logos = "0.15.0"
 serde = { version = "1.0.159", features = ["derive"] }
 toml = "0.8.8"
 thiserror = "2.0.12"
