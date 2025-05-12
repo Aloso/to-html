@@ -15,7 +15,7 @@ libfuzzer-sys = "0.4"
 path = ".."
 
 [dev-dependencies]
-insta = "1.29.0"
+insta = "1.43.1"
 
 [lib]
 name = "html_interpreter"
