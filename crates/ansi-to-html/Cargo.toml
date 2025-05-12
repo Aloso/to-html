@@ -22,7 +22,7 @@ lazy-init = []
 
 [dev-dependencies]
 divan = "0.1.21"
-flate2 = "1.0.35"
+flate2 = "1.1.1"
 insta = "1.29.0"
 
 [[bench]]
