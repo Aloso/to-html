@@ -1,15 +1,28 @@
-use std::{ops::Range, str::CharIndices};
+const ESCAPE: u8 = 0x1b;
 
 #[must_use]
 pub(crate) struct AnsiParser<'text> {
     text: &'text str,
-    chars: CharIndices<'text>,
+    index: usize,
 }
 
 impl<'text> AnsiParser<'text> {
     pub(crate) fn new(text: &'text str) -> Self {
-        let chars = text.char_indices();
-        Self { text, chars }
+        let index = 0;
+        Self { text, index }
+    }
+
+    fn current_byte(&self) -> Option<u8> {
+        self.text.as_bytes().get(self.index).copied()
+    }
+
+    fn next_byte(&mut self) -> Option<u8> {
+        self.inc();
+        self.current_byte()
+    }
+
+    fn inc(&mut self) {
+        self.index += 1;
     }
 }
 
@@ -23,90 +36,53 @@ impl<'text> Iterator for AnsiParser<'text> {
     type Item = AnsiFragment<'text>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut dfa = Dfa::new(&mut self.chars).unwrap();
-
-        match dfa.next()? {
-            // Walk through the current run of text
-            Status::Waiting => {
-                while dfa.peek() == Some(Status::Waiting) {
-                    dfa.next();
-                }
-                Some(AnsiFragment::Text(&self.text[dfa.span()]))
-            }
-            // Walk through the ansi sequence
-            Status::InSequence => loop {
-                let Some(status) = dfa.peek() else {
-                    break Some(AnsiFragment::Text(&self.text[dfa.span()]));
+        let start_idx = self.index;
+        // All ANSI codes start with ESCAPE, so check if we're parsing an ANSI code or plain text
+        // with this iteration
+        if self.current_byte()? == ESCAPE {
+            let mut state = State::default();
+            loop {
+                let Some(b) = self.next_byte() else {
+                    break Some(AnsiFragment::Text(&self.text[start_idx..self.index]));
                 };
 
-                match status {
-                    Status::Waiting => unreachable!("We're already past `Waiting`"),
-                    Status::InSequence => _ = dfa.next(),
+                state.munch(b);
+                match state.into() {
+                    Status::InSequence => {}
                     Status::Accept => {
-                        dfa.next();
-                        break Some(AnsiFragment::Sequence(&self.text[dfa.span()]));
+                        self.inc();
+                        break Some(AnsiFragment::Sequence(&self.text[start_idx..self.index]));
                     }
-                    // TODO(cosmic): niche case, but behavior is diverging from the regex here
+                    // NOTE(cosmic): niche case, but behavior is diverging from the regex here
                     // which would return invalid ansi codes _along with_ any surround text whereas
                     // we're emitting them separately atm
                     Status::RejectAsText => {
                         // Fortunately the starting ESC of an ANSI sequence can't appear within
                         // the sequence itself, so we don't need to worry about any backtracking or
                         // reparsing
-                        break Some(AnsiFragment::Text(&self.text[dfa.span()]));
+                        break Some(AnsiFragment::Text(&self.text[start_idx..self.index]));
                     }
                 }
-            },
-            _ => unreachable!("No other possible statuses after just one char"),
+            }
+        } else {
+            // Increment past the byte we just checked
+            self.inc();
+            // Find the next ESCAPE if there is one and adjust our index accordingly
+            match memchr::memchr(ESCAPE, &self.text.as_bytes()[start_idx..]) {
+                Some(end_offset) => self.index += end_offset - 1,
+                None => self.index = self.text.len(),
+            };
+            Some(AnsiFragment::Text(&self.text[start_idx..self.index]))
         }
-    }
-}
-
-/// A small DFA that detects and emits ANSI codes from an underlying `CharIndices`
-struct Dfa<'short, 'text: 'short> {
-    chars: &'short mut CharIndices<'text>,
-    state: State,
-    start_idx: usize,
-}
-
-impl<'short, 'text> Dfa<'short, 'text> {
-    fn new(chars: &'short mut CharIndices<'text>) -> Option<Self> {
-        let state = State::default();
-        let start_idx = chars.offset();
-        Some(Self {
-            chars,
-            state,
-            start_idx,
-        })
-    }
-
-    fn peek(&self) -> Option<Status> {
-        let mut chars_lookahead = self.chars.to_owned();
-        let mut state_lookahead = self.state.to_owned();
-        let (_, c) = chars_lookahead.next()?;
-        state_lookahead.munch(c);
-        Some(state_lookahead.into())
-    }
-
-    fn next(&mut self) -> Option<Status> {
-        let (_, c) = self.chars.next()?;
-        self.state.munch(c);
-        Some(self.state.into())
-    }
-
-    fn span(self) -> Range<usize> {
-        self.start_idx..self.chars.offset()
     }
 }
 
 #[derive(Clone, Copy, Default)]
 enum State {
-    /// Waiting to see an escape
     #[default]
-    Init,
+    Escape,
     Trap,
     Accept,
-    Escape,
     EscapeOpenParen,
     /// Control Sequence Introducer (CSI) - Indicates the start of an ansi sequence
     Csi,
@@ -115,21 +91,25 @@ enum State {
 }
 
 impl State {
-    fn munch(&mut self, c: char) {
-        *self = match (*self, c) {
-            // Waiting for ESC
-            (Self::Init, '\u{1b}') => Self::Escape,
-            (Self::Init, _) => Self::Init,
+    fn munch(&mut self, b: u8) {
+        *self = match (*self, b) {
             // Weird `<ESC>(B` ansi code
-            (Self::Escape, '(') => Self::EscapeOpenParen,
-            (Self::EscapeOpenParen, 'B') => Self::Accept,
+            (Self::Escape, b'(') => Self::EscapeOpenParen,
+            (Self::EscapeOpenParen, b'B') => Self::Accept,
             // CSI-related codes
-            (Self::Escape, '[') => Self::Csi,
-            (Self::Csi | Self::Digit | Self::SemiColon, '0'..='9') => Self::Digit,
-            (Self::Digit, ';') => Self::SemiColon,
+            (Self::Escape, b'[') => Self::Csi,
+            (Self::Csi | Self::Digit | Self::SemiColon, b'0'..=b'9') => Self::Digit,
+            (Self::Digit, b';') => Self::SemiColon,
             (
                 Self::Csi | Self::Digit | Self::SemiColon,
-                'A'..='H' | 'J' | 'K' | 'S' | 'T' | 'f' | 'h' | 'i' | 'l' | 'm' | 'n' | 's' | 'u',
+                b'A'..=b'H'
+                | b'J'..=b'K'
+                | b'S'..=b'T'
+                | b'f'
+                | b'h'..=b'i'
+                | b'l'..=b'n'
+                | b's'
+                | b'u',
             ) => Self::Accept,
             // Anything else is invalid
             _ => Self::Trap,
@@ -139,7 +119,6 @@ impl State {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Status {
-    Waiting,
     InSequence,
     Accept,
     RejectAsText,
@@ -148,7 +127,6 @@ enum Status {
 impl From<State> for Status {
     fn from(state: State) -> Self {
         match state {
-            State::Init => Self::Waiting,
             State::Trap => Self::RejectAsText,
             State::Accept => Self::Accept,
             State::Escape
@@ -163,6 +141,19 @@ impl From<State> for Status {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn plain() {
+        let parser = AnsiParser::new("Hello World!");
+        let fragments: Vec<_> = parser.into_iter().collect();
+        insta::assert_debug_snapshot!(fragments, @r#"
+        [
+            Text(
+                "Hello World!",
+            ),
+        ]
+        "#);
+    }
 
     #[test]
     fn variety() {

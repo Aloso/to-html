@@ -13,6 +13,7 @@ license = "MIT"
 keywords = ["color", "cli", "terminal", "html"]
 
 [dependencies]
+memchr = "2.7.4"
 regex = "1.7.3"
 
 [features]
@@ -21,6 +22,7 @@ default = []
 lazy-init = []
 
 [dev-dependencies]
+clap = { version = "4.5.27", features = ["derive"] }
 divan = "0.1.21"
 flate2 = "1.1.1"
 insta = "1.43.1"
