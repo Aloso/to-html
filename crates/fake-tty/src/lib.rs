@@ -116,7 +116,7 @@ pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> 
 pub fn get_stdout(stdout: Vec<u8>) -> Result<String, FromUtf8Error> {
     let out = String::from_utf8(stdout)?;
 
-    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[cfg(any(target_os = "linux", target_os = "android", target_os = "windows"))]
     {
         Ok(out.replace("\r\n", "\n"))
     }
@@ -127,11 +127,6 @@ pub fn get_stdout(stdout: Vec<u8>) -> Result<String, FromUtf8Error> {
         if out.starts_with("^D\u{8}\u{8}") {
             out = out["^D\u{8}\u{8}".len()..].to_string()
         }
-        Ok(out)
-    }
-
-    #[cfg(target_os = "windows")]
-    {
         Ok(out)
     }
 }
@@ -228,25 +223,25 @@ mod tests {
 
         #[test]
         fn echo() {
-            assert_eq!(run("echo hello world"), "hello\r\nworld\r\n");
+            assert_eq!(run("echo hello world"), "hello\nworld\n");
         }
 
         #[test]
         fn seq() {
-            assert_eq!(run("1..3"), "1\r\n2\r\n3\r\n");
+            assert_eq!(run("1..3"), "1\n2\n3\n");
         }
 
         #[test]
         fn echo_quotes() {
             // In powershell, backtick is used to escape the next character.
-            assert_eq!(run(r#"echo "Hello `$``' world!""#), "Hello $`' world!\r\n");
+            assert_eq!(run(r#"echo "Hello `$``' world!""#), "Hello $`' world!\n");
         }
 
         #[test]
         fn echo_and_pipe() {
             assert_eq!(
                 run("echo 'look, pipe support!' | % { Write-Host $_ }"),
-                "look, pipe support!\r\n"
+                "look, pipe support!\n"
             );
         }
     }
