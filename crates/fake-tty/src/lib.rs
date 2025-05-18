@@ -70,20 +70,21 @@ pub fn command(command: &str, shell: Option<&str>) -> io::Result<Command> {
 /// assert!(output.status.success());
 /// ```
 pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> {
-    let shell = {
-        #[cfg(not(target_os = "windows"))]
-        let shell_default = shell.unwrap_or("bash");
-        #[cfg(target_os = "windows")]
-        let shell_default = shell.unwrap_or("pwsh");
+    #[cfg(not(target_os = "windows"))]
+    let shell = which_cmd(shell.unwrap_or("bash"))?;
+    #[cfg(target_os = "windows")]
+    let shell = match shell {
+        Some(shell) => which_cmd(shell),
+        None => which_cmd("bash").or_else(|_| which_cmd("powershell")),
+    }?;
 
-        which_shell(shell_default)?
-    };
+    let shell = shell.trim();
 
     #[cfg(any(target_os = "linux", target_os = "android"))]
     {
         let mut command = Command::new("script");
         command.args(["-qec", c, "/dev/null"]);
-        command.env("SHELL", shell.trim());
+        command.env("SHELL", shell);
 
         Ok(command)
     }
@@ -91,14 +92,40 @@ pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> 
     #[cfg(any(target_os = "macos", target_os = "freebsd"))]
     {
         let mut command = Command::new("script");
-        command.args(&["-q", "/dev/null", shell.trim(), "-c", c]);
+        command.args(&["-q", "/dev/null", shell, "-c", c]);
         Ok(command)
     }
 
     #[cfg(target_os = "windows")]
     {
-        let mut command = Command::new(shell.trim());
-        command.args(&["-Command", c]);
+        let shell_lowercase = shell.to_lowercase();
+        let command = if shell_lowercase.contains("pwsh") || shell_lowercase.contains("powershell")
+        {
+            let mut command = Command::new(shell);
+            command.args(&["-Command", c]);
+            command
+        } else {
+            // On Windows:
+            //
+            // * If the `script` command is available, assume the user is running WSL bash.
+            // * Otherwise assume the user is running git-bash which doesn't have `script`
+            if which_cmd("script").is_ok() {
+                let mut command = Command::new("script");
+                command.args(["-qec", c, "/dev/null"]);
+                command.env("SHELL", shell);
+                command
+            } else {
+                let mut command = Command::new("bash");
+                // This abomination is required because somehow on Windows, the
+                // `\`s gets interpreted twice before being passed to `bash`.
+                //
+                // Tested to work on both powershell and git-bash.
+                let cmd_trebly_escaped = c.replace("\\", "\\\\\\");
+                command.args(["-c", &cmd_trebly_escaped]);
+                command.env("SHELL", shell);
+                command
+            }
+        };
         Ok(command)
     }
 
@@ -131,11 +158,12 @@ pub fn get_stdout(stdout: Vec<u8>) -> Result<String, FromUtf8Error> {
     }
 }
 
-fn which_shell(shell: &str) -> io::Result<String> {
+/// Returns the full path to the command if found.
+fn which_cmd(cmd: &str) -> io::Result<String> {
     #[cfg(not(target_os = "windows"))]
     {
         let which = Command::new("which")
-            .arg(shell)
+            .arg(cmd)
             .stdout(Stdio::piped())
             .output()?;
 
@@ -151,13 +179,17 @@ fn which_shell(shell: &str) -> io::Result<String> {
 
     #[cfg(target_os = "windows")]
     {
-        let get_command = Command::new("pwsh")
-            .args(&["-Command", &format!("(Get-Command {shell}).Path")])
+        // We use `powershell` to do the discovery, which is the default version
+        // shipped with Windows, usually a lower version (`5.1.26100.4061` on Windows 11).
+        //
+        // If the user has installed Powershell explicitly, it is called `pwsh`.
+        let get_command = Command::new("powershell")
+            .args(&["-Command", &format!("(Get-Command {cmd}).Path")])
             .stdout(Stdio::piped())
             .output()?;
 
-        // pwsh returns 0 when the subcommand fails, so we can't just
-        // use `get_command.status.succes()`
+        // The above `get_command` returns 0 when the subcommand fails, so we can't just
+        // use `get_command.status.success()`.
         let output = String::from_utf8(get_command.stdout).unwrap();
         if !output.trim().is_empty() {
             Ok(output)
@@ -173,13 +205,14 @@ fn which_shell(shell: &str) -> io::Result<String> {
 #[cfg(test)]
 mod tests {
     fn run(s: &str) -> String {
-        #[cfg(not(target_os = "windows"))]
-        let output = crate::bash_command(s).unwrap().output().unwrap();
-        #[cfg(target_os = "windows")]
-        let output = crate::command(s, None).unwrap().output().unwrap();
+        run_with(s, None)
+    }
+
+    fn run_with(s: &str, shell: Option<&str>) -> String {
+        let output = crate::command(s, shell).unwrap().output().unwrap();
         let s1 = crate::get_stdout(output.stdout).unwrap();
 
-        if crate::which_shell("zsh").is_ok() {
+        if crate::which_cmd("zsh").is_ok() {
             let output = crate::command(s, Some("zsh")).unwrap().output().unwrap();
             let s2 = crate::get_stdout(output.stdout).unwrap();
 
@@ -189,8 +222,7 @@ mod tests {
         s1
     }
 
-    #[cfg(not(target_os = "windows"))]
-    mod not_windows {
+    mod bash {
         use super::run;
 
         #[test]
@@ -218,29 +250,35 @@ mod tests {
     }
 
     #[cfg(target_os = "windows")]
-    mod windows {
-        use super::run;
+    mod windows_pwsh {
+        use super::run_with;
 
         #[test]
         fn echo() {
-            assert_eq!(run("echo hello world"), "hello\nworld\n");
+            assert_eq!(run_with("echo hello world", Some("pwsh")), "hello\nworld\n");
         }
 
         #[test]
         fn seq() {
-            assert_eq!(run("1..3"), "1\n2\n3\n");
+            assert_eq!(run_with("1..3", Some("pwsh")), "1\n2\n3\n");
         }
 
         #[test]
         fn echo_quotes() {
             // In powershell, backtick is used to escape the next character.
-            assert_eq!(run(r#"echo "Hello `$``' world!""#), "Hello $`' world!\n");
+            assert_eq!(
+                run_with(r#"echo "Hello `$``' world!""#, Some("pwsh")),
+                "Hello $`' world!\n"
+            );
         }
 
         #[test]
         fn echo_and_pipe() {
             assert_eq!(
-                run("echo 'look, pipe support!' | % { Write-Host $_ }"),
+                run_with(
+                    "echo 'look, pipe support!' | % { Write-Host $_ }",
+                    Some("pwsh")
+                ),
                 "look, pipe support!\n"
             );
         }
