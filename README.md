@@ -62,6 +62,28 @@ Cargo.toml  crates        LICENSE  src
 
 (colors can't be shown on GitHub)
 
+### Windows
+
+On Windows, `to-html` defaults to using `bash` as the shell. Normally this resolves to `C:\Windows\system32\bash.exe`, which would attempt to use WSL's `bash`.
+
+```bash
+to-html 'ls --color=always'  # uses WSL
+```
+
+To use `git-bash`, make sure it is on your `PATH`, and pass in `-s git-bash`:
+
+```bash
+to-html -s git-bash 'ls --color=always'
+```
+
+For Powershell, `powershell` resolves to the binary shipped with Windows -- `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`. This is usually an older version which doesn't support ANSI colours.
+
+If you have installed Powershell explicitly, pass in `-s pwsh` to use the installed version instead:
+
+```bash
+to-html -s pwsh 'ls -Verbose'
+```
+
 ## Configuration file
 
 You can create a configuration file named `config.toml`:
