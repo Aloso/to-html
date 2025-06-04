@@ -7,8 +7,19 @@ use std::{
 use crate::StdError;
 
 pub fn run(args: &str, shell: Option<&str>) -> Result<(String, String, ExitStatus), StdError> {
-    let output =
-        fake_tty::command(&format!("{}; printf \"~~////~~\"; pwd", args), shell)?.output()?;
+    let is_powershell = shell
+        .map(str::to_lowercase)
+        .map(|shell_lowercase| {
+            shell_lowercase.contains("pwsh") || shell_lowercase.contains("powershell")
+        })
+        .unwrap_or(false);
+    let cmd_and_pwd = if is_powershell {
+        format!("{}; echo \"~~////~~\"; (pwd).Path", args)
+    } else {
+        format!("{}; echo \"~~////~~\"; pwd", args)
+    };
+
+    let output = fake_tty::command(&cmd_and_pwd, shell)?.output()?;
 
     let stdout = fake_tty::get_stdout(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
@@ -22,6 +33,23 @@ pub fn run(args: &str, shell: Option<&str>) -> Result<(String, String, ExitStatu
 
     let (output, cwd) = stdout.split_at(lb);
     let cwd = cwd.trim_start_matches("~~////~~").trim_start();
+
+    // On Windows, `std::env::set_current_dir` needs to be in the form:
+    //
+    // ```text
+    // C:\Some\Path
+    // ```
+    //
+    // `pwd` outputs on different shells:
+    //
+    // * `git-bash`: `/c/Some/Path`
+    // * WSL `bash`: `/mnt/c/Some/Path`
+    #[cfg(target_os = "windows")]
+    let cwd = &cwd
+        .trim_start_matches("/mnt")
+        .trim_start_matches('/') // Remove the leading slash
+        .replacen('/', ":\\", 1) // Add a `:` for the drive letter.
+        .replace('/', "\\"); // Use Windows directory separator.
 
     if !cmp_paths(std::env::current_dir()?, cwd) {
         std::env::set_current_dir(cwd)?;
@@ -51,4 +79,38 @@ fn test_run() {
         stdout,
         stderr
     );
+}
+
+#[cfg(target_os = "windows")]
+#[test]
+fn test_run_pwsh() {
+    let (stdout, stderr, status) = run("ls -Verbose", Some("pwsh")).unwrap();
+    assert!(
+        status.success(),
+        "Running `ls -Verbose` was unsuccessful (stdout: {:?}, stderr: {:?})",
+        stdout,
+        stderr
+    );
+}
+
+#[test]
+fn run_changes_directories() {
+    let temp_dir = tempfile::Builder::new()
+        .prefix("to-html-test-")
+        .tempdir()
+        .unwrap();
+    let base_dir = temp_dir.path();
+    std::fs::File::create(&base_dir.join("file.txt")).unwrap();
+    let pwd = base_dir.join("pwd");
+    std::fs::create_dir(&pwd).unwrap();
+    std::env::set_current_dir(&pwd).unwrap();
+
+    let status = run("cd ..", None).unwrap().2;
+    assert!(status.success());
+
+    let ls_cmd = "ls -1";
+
+    let (stdout, _, status) = run(ls_cmd, None).unwrap();
+    assert!(status.success());
+    assert_eq!(stdout.trim(), "file.txt\npwd");
 }
