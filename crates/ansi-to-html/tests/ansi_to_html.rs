@@ -226,3 +226,16 @@ fn overline() {
         @"<u style='text-decoration:overline'>over <u>and under</u> just over</u> plain"
     );
 }
+
+#[test]
+fn hyperlink() {
+    let input = "Finished \
+        \x1b]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\
+        \x1b\\`dev` profile [unoptimized + debuginfo]\x1b]8;;\x1b\\ \
+        target(s) in 0.04s";
+    let converted = ansi_to_html::convert(input).unwrap();
+    insta::assert_snapshot!(
+        converted,
+        @"Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s"
+    );
+}
