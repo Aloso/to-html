@@ -211,3 +211,16 @@ Setting FG color while inverted actually sets BG
     <span style='color:var(--red,#a00)'>Red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>Red bg<span style='background:var(--green,#0a0)'>Green bg</span></span><span style='color:var(--green,#0a0)'>Green fg</span></span>
     ");
 }
+
+#[test]
+fn hyperlink() {
+    let input = "Finished \
+        \x1b]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\
+        \x1b\\`dev` profile [unoptimized + debuginfo]\x1b]8;;\x1b\\ \
+        target(s) in 0.04s";
+    let converted = ansi_to_html::convert(input).unwrap();
+    insta::assert_snapshot!(
+        converted,
+        @"Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s"
+    );
+}
