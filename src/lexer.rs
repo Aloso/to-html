@@ -166,7 +166,9 @@ pub(crate) enum TokenKind {
     #[regex("[012]>>?&[012]")]
     Pipe,
 
-    #[token("\n")]
+    // NOTE: `Whitespace` can also match this token, so we explicitly use a higher priority to
+    // match this token when possible
+    #[token("\n", priority = 3)]
     LineBreak,
 
     #[regex(r"\s+")]
