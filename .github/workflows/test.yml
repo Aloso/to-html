@@ -46,6 +46,7 @@ jobs:
       - name: Build and run tests
         run: |
           cargo test --workspace
+          cargo bench -p ansi-to-html --profile dev -- --test
 
   fuzz:
     needs: lint
