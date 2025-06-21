@@ -16,10 +16,10 @@ jobs:
       matrix:
         channel: [stable, beta]
     steps:
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.channel }}
-          components: clippy, rustfmt
+      - name: Install ${{ matrix.channel }} toolchain
+        run: |
+          rustup toolchain install ${{ matrix.rust }} --profile minimal --component clippy,rustfmt
+          rustup default ${{ matrix.rust }}
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run `cargo fmt`
@@ -37,9 +37,10 @@ jobs:
         channel: [stable, beta]
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.channel }}
+      - name: Install ${{ matrix.channel }} toolchain
+        run: |
+          rustup toolchain install ${{ matrix.rust }} --profile minimal
+          rustup default ${{ matrix.rust }}
       - name: Checkout
         uses: actions/checkout@v4
       - name: Build and run tests
@@ -50,7 +51,10 @@ jobs:
     needs: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: dtolnay/rust-toolchain@nightly
+      - name: Install nightly toolchain
+        run: |
+          rustup toolchain install nightly --profile minimal
+          rustup default nightly
       - name: Checkout
         uses: actions/checkout@v4
       # Run the fuzzer for a minute
