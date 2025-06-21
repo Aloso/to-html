@@ -117,10 +117,7 @@ fn which_shell(shell: &str) -> io::Result<String> {
     if which.status.success() {
         Ok(String::from_utf8(which.stdout).unwrap())
     } else {
-        Err(io::Error::new(
-            io::ErrorKind::Other,
-            String::from_utf8(which.stderr).unwrap(),
-        ))
+        Err(io::Error::other(String::from_utf8(which.stderr).unwrap()))
     }
 }
 
