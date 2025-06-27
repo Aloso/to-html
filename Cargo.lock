@@ -880,6 +880,7 @@ dependencies = [
  "libc",
  "logos",
  "serde",
+ "serde_derive",
  "thiserror 2.0.12",
  "toml",
 ]
