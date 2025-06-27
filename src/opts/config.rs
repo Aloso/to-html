@@ -1,6 +1,6 @@
 use std::{fs, io, path::PathBuf};
 
-use serde::Deserialize;
+use serde_derive::Deserialize;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {

@@ -25,7 +25,8 @@ ansi-to-html = { path = "./crates/ansi-to-html", version = "0.2.2" }
 clap = { version = "4.5.48", features = ["derive", "wrap_help"] }
 dirs-next = "2.0.0"
 logos = "0.15.0"
-serde = { version = "1.0.219", features = ["derive"] }
+serde_derive = "1.0.219"
+serde = "1.0.219"
 toml = "0.9.7"
 thiserror = "2.0.16"
 libc = "0.2"
