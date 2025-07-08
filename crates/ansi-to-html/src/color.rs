@@ -23,7 +23,7 @@ impl Color {
             7 => FourBitColor::White,
             _ => {
                 return Err(Error::InvalidAnsi {
-                    msg: format!("unexpected integer {} parsing 4-bit color", code),
+                    msg: format!("unexpected integer {code} parsing 4-bit color"),
                 })
             }
         }))
@@ -41,7 +41,7 @@ impl Color {
             7 => FourBitColor::BrightWhite,
             _ => {
                 return Err(Error::InvalidAnsi {
-                    msg: format!("unexpected integer {} parsing bright 4-bit color", code),
+                    msg: format!("unexpected integer {code} parsing bright 4-bit color"),
                 })
             }
         }))
@@ -84,7 +84,7 @@ impl Color {
             }
             _ => {
                 return Err(Error::InvalidAnsi {
-                    msg: format!("Expected 2 or 5, got {}", code),
+                    msg: format!("Expected 2 or 5, got {code}"),
                 })
             }
         })
@@ -120,7 +120,7 @@ impl fmt::Display for Color {
         match *self {
             Color::FourBit(color) => fmt::Display::fmt(&EightBitColor { code: color as u8 }, f),
             Color::EightBit(color) => fmt::Display::fmt(&color, f),
-            Color::Rgb(RgbColor { r, g, b }) => write!(f, "#{:02x}{:02x}{:02x}", r, g, b),
+            Color::Rgb(RgbColor { r, g, b }) => write!(f, "#{r:02x}{g:02x}{b:02x}"),
         }
     }
 }

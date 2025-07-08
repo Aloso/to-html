@@ -489,7 +489,7 @@ impl Tokens<'_> {
                     }
                 }
                 &Token::Whitespace(w) => {
-                    write!(buf, "{}", w)?;
+                    write!(buf, "{w}")?;
                     continue;
                 }
                 &Token::Word(w) => {
@@ -528,29 +528,29 @@ impl Tokens<'_> {
                     write!(buf, "<span class='{}str'>{}</span>", prefix, Esc(s))?;
                 }
                 Token::Backticks(t) => {
-                    write!(buf, "<span class='{}punct'>`</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>`</span>")?;
                     t.colorize(buf, opts, true)?;
-                    write!(buf, "<span class='{}punct'>`</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>`</span>")?;
                 }
                 Token::Brackets(t) => {
-                    write!(buf, "<span class='{}punct'>[</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>[</span>")?;
                     t.colorize(buf, opts, false)?;
-                    write!(buf, "<span class='{}punct'>]</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>]</span>")?;
                 }
                 Token::Parens(t) => {
-                    write!(buf, "<span class='{}punct'>(</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>(</span>")?;
                     t.colorize(buf, opts, false)?;
-                    write!(buf, "<span class='{}punct'>)</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>)</span>")?;
                 }
                 Token::DollarParens(t) => {
-                    write!(buf, "<span class='{}punct'>$(</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>$(</span>")?;
                     t.colorize(buf, opts, true)?;
-                    write!(buf, "<span class='{}punct'>)</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>)</span>")?;
                 }
                 Token::Braces(t) => {
-                    write!(buf, "<span class='{}punct'>{{</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>{{</span>")?;
                     t.colorize(buf, opts, true)?;
-                    write!(buf, "<span class='{}punct'>}}</span>", prefix)?;
+                    write!(buf, "<span class='{prefix}punct'>}}</span>")?;
                 }
                 Token::Heredoc(h) => {
                     h.colorize(buf, opts)?;
@@ -569,7 +569,7 @@ impl Tokens<'_> {
 impl DString<'_> {
     fn colorize(&self, buf: &mut String, opts: &Opts) -> Result<(), StdError> {
         let prefix = opts.prefix.as_str();
-        write!(buf, "<span class='{}str'>\"", prefix)?;
+        write!(buf, "<span class='{prefix}str'>\"")?;
 
         for token in &self.0 {
             match token {
@@ -585,12 +585,12 @@ impl DString<'_> {
                 DStringToken::Backticks(t) => {
                     write!(buf, "`</span>")?;
                     t.colorize(buf, opts, true)?;
-                    write!(buf, "<span class='{}str'>`", prefix)?;
+                    write!(buf, "<span class='{prefix}str'>`")?;
                 }
                 DStringToken::Parens(t) => {
                     write!(buf, "$(</span>")?;
                     t.colorize(buf, opts, true)?;
-                    write!(buf, "<span class='{}str'>)", prefix)?;
+                    write!(buf, "<span class='{prefix}str'>)")?;
                 }
             }
         }
@@ -608,7 +608,7 @@ impl Heredoc<'_> {
         self.first_line.colorize(buf, opts, false)?;
         writeln!(buf)?;
 
-        write!(buf, "<span class='{}str'>", prefix)?;
+        write!(buf, "<span class='{prefix}str'>")?;
         for &line in &self.content {
             writeln!(buf, "{}", Esc(line))?;
         }

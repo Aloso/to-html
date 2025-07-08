@@ -19,8 +19,8 @@ impl From<ParseIntError> for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::ParseInt(err) => write!(f, "{}", err),
-            Self::InvalidAnsi { msg } => write!(f, "Invalid ANSI: {}", msg),
+            Self::ParseInt(err) => write!(f, "{err}"),
+            Self::InvalidAnsi { msg } => write!(f, "Invalid ANSI: {msg}"),
         }
     }
 }

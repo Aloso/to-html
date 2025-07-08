@@ -72,7 +72,7 @@ where
         100..=107 => Ansi::BackgroundColor(Color::parse_4bit_bright(code - 100)?),
         _ => {
             return Err(Error::InvalidAnsi {
-                msg: format!("Unexpected code {}", code),
+                msg: format!("Unexpected code {code}"),
             })
         }
     })
