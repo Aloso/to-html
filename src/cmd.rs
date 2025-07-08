@@ -8,7 +8,7 @@ use crate::StdError;
 
 pub fn run(args: &str, shell: Option<&str>) -> Result<(String, String, ExitStatus), StdError> {
     let output =
-        fake_tty::command(&format!("{}; printf \"~~////~~\"; pwd", args), shell)?.output()?;
+        fake_tty::command(&format!("{args}; printf \"~~////~~\"; pwd"), shell)?.output()?;
 
     let stdout = fake_tty::get_stdout(output.stdout)?;
     let stderr = String::from_utf8(output.stderr)?;
@@ -17,7 +17,7 @@ pub fn run(args: &str, shell: Option<&str>) -> Result<(String, String, ExitStatu
     let stdout = stdout.trim_end();
     let lb = stdout
         .rfind("~~////~~")
-        .ok_or_else(|| format!("Delimiter not found in the string {:?}", stdout))
+        .ok_or_else(|| format!("Delimiter not found in the string {stdout:?}"))
         .unwrap();
 
     let (output, cwd) = stdout.split_at(lb);
@@ -47,8 +47,6 @@ fn test_run() {
     let (stdout, stderr, status) = run("ls -l", None).unwrap();
     assert!(
         status.success(),
-        "Running `ls -l` was unsuccessful (stdout: {:?}, stderr: {:?})",
-        stdout,
-        stderr
+        "Running `ls -l` was unsuccessful (stdout: {stdout:?}, stderr: {stderr:?})"
     );
 }

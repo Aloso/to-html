@@ -14,7 +14,7 @@ fn main() {
     match main_inner() {
         Ok(_) => {}
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             std::process::exit(1);
         }
     }
@@ -76,7 +76,7 @@ fn main_inner() -> Result<(), StdError> {
         writeln!(buf, "</body>\n</html>")?;
     }
 
-    println!("{}", buf);
+    println!("{buf}");
 
     Ok(())
 }
@@ -109,11 +109,11 @@ fn fmt_command(buf: &mut String, command: &str, opts: &Opts) -> Result<(), StdEr
     let (cmd_out, cmd_err, _) = cmd::run(command, shell)?;
     if !cmd_out.is_empty() {
         let html = converter.convert(&cmd_out)?;
-        write!(buf, "{}", html)?;
+        write!(buf, "{html}")?;
     }
     if !cmd_err.is_empty() {
         let html = converter.convert(&cmd_err)?;
-        write!(buf, "{}", html)?;
+        write!(buf, "{html}")?;
     }
 
     Ok(())
