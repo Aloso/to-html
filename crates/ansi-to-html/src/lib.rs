@@ -49,7 +49,7 @@
 //! ```
 //!
 //! Use the [`Converter`] builder for customization options.
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 
 use std::sync::OnceLock;
 
