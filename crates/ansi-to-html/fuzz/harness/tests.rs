@@ -74,3 +74,17 @@ fn removing_style_keeps_correct_order() {
         @"<u><span style='color:var(--blue,#00a)'></span></u><span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
     );
 }
+
+/// Previously optimizations would remove any instance of `</u><u>` which was valid when `<u>`
+/// was the only type of underline, but broke when support for double-underlined was added
+#[test]
+fn naive_underline_optimization() {
+    // Input: double-underline -> "Double" -> reset -> underline -> "Single"
+    let ansi_text = "\x1b[21mDouble\x1b[0;4mSingle";
+    assert_opt_equiv_to_no_opt(ansi_text);
+    let htmlified = ansi_to_html::convert(ansi_text).unwrap();
+    insta::assert_snapshot!(
+        htmlified,
+        @"<u style='text-decoration-style:double'>Double</u><u>Single</u>"
+    );
+}
