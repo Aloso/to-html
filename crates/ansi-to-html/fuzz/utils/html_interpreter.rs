@@ -336,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    fn input_blue_red_text_red_text() {
+    fn overlapping_colors_sanity() {
         // Input: blue -> red -> "Red" -> red -> " Still Red"
         let ansi_text = "\x1b[34;31mRed\x1b[31m Still Red";
         assert_opt_equiv_to_no_opt(ansi_text);
@@ -348,7 +348,7 @@ mod tests {
     }
 
     #[test]
-    fn input_red_text_blue_red_text() {
+    fn can_apply_already_applied_color() {
         // Input: red -> "Red" -> blue -> red -> " Still Red"
         let ansi_text = "\x1b[31mRed\x1b[34;31m Still Red";
         assert_opt_equiv_to_no_opt(ansi_text);
@@ -359,8 +359,10 @@ mod tests {
         );
     }
 
+    /// Previously when active styles were removed from the stack it would accidentally reapply
+    /// some of the active styles in the reverse order
     #[test]
-    fn input_uline_blue_red_ulineoff_text_red_text() {
+    fn removing_style_keeps_correct_order() {
         // Input: underline -> blue -> red -> underline off -> "Red" -> red -> " Still Red"
         let ansi_text = "\x1b[4;34;31;24mRed\x1b[31m Still Red";
         assert_opt_equiv_to_no_opt(ansi_text);
