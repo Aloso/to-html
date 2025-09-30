@@ -31,21 +31,21 @@ impl Style {
                 let color = c.into_color_css(var_prefix);
                 let inverted = styles.contains(&Style::Inverted);
                 let property = Self::get_property(!inverted);
-                let _ = buf.write_fmt(format_args!("<span style='{property}:{color}'>"));
+                let _ = write!(buf, "<span style='{property}:{color}'>");
                 return;
             }
             Style::BackgroundColor(c) => {
                 let color = c.into_color_css(var_prefix);
                 let inverted = styles.contains(&Style::Inverted);
                 let property = Self::get_property(inverted);
-                let _ = buf.write_fmt(format_args!("<span style='{property}:{color}'>"));
+                let _ = write!(buf, "<span style='{property}:{color}'>");
                 return;
             }
             Style::Inverted => {
                 let (fg, bg) = Self::get_fg_and_bg(styles, theme);
                 let fg = fg.into_color_css(var_prefix);
                 let bg = bg.into_color_css(var_prefix);
-                let _ = buf.write_fmt(format_args!("<span style='color:{fg};background:{bg}'>"));
+                let _ = write!(buf, "<span style='color:{fg};background:{bg}'>");
                 return;
             }
         };
