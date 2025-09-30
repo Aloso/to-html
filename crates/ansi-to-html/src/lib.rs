@@ -50,6 +50,7 @@
 //!
 //! Use the [`Converter`] builder for customization options.
 #![forbid(unsafe_code)]
+#![warn(clippy::return_self_not_must_use)]
 
 use std::sync::OnceLock;
 
@@ -147,18 +148,21 @@ impl Converter {
     }
 
     /// Avoids escaping special HTML characters prior to conversion.
+    #[must_use]
     pub fn skip_escape(mut self, skip: bool) -> Self {
         self.skip_escape = skip;
         self
     }
 
     /// Skips removing some useless HTML tags.
+    #[must_use]
     pub fn skip_optimize(mut self, skip: bool) -> Self {
         self.skip_optimize = skip;
         self
     }
 
     /// Adds a custom prefix for the CSS variables used for all the 4-bit colors.
+    #[must_use]
     pub fn four_bit_var_prefix(mut self, prefix: Option<String>) -> Self {
         self.four_bit_var_prefix = prefix;
         self
@@ -167,6 +171,7 @@ impl Converter {
     /// Sets the color theme of the terminal.
     ///
     /// This is needed to decide how text with the "reverse video" ANSI code is displayed.
+    #[must_use]
     pub fn theme(mut self, theme: Theme) -> Self {
         self.theme = theme;
         self
