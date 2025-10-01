@@ -14,7 +14,7 @@ keywords = ["color", "cli", "terminal", "html"]
 
 [dependencies]
 memchr = "2.7.5"
-regex = "1.7.3"
+regex = "1.11.3"
 
 [features]
 default = []
