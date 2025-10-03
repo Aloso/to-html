@@ -18,8 +18,8 @@ path = ".."
 insta = "1.43.1"
 
 [lib]
-name = "html_interpreter"
-path = "utils/html_interpreter.rs"
+name = "harness"
+path = "harness/lib.rs"
 
 [[bin]]
 name = "opt_equiv"

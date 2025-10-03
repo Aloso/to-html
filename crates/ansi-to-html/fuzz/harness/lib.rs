@@ -7,6 +7,9 @@ use html5ever::{
 
 use std::{cell::RefCell, collections::BTreeSet, mem, str::FromStr};
 
+#[cfg(test)]
+mod tests;
+
 /// Ensures that our optimized HTML output is semantically equivalent to the unoptimized output
 /// (along with verifying some other properties like our HTML being reasonably well-formed)
 pub fn assert_opt_equiv_to_no_opt(ansi_text: &str) {
@@ -287,83 +290,5 @@ impl From<Option<Attr>> for UnderlineStyle {
             }
             Some(unknown) => panic!("Unknown attr for <u>: {unknown:#?}"),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn sanity() {
-        let ansi_text = "\x1b[1mBold\x1b[31mRed and Bold";
-        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
-        insta::assert_debug_snapshot!(interpret_html(&htmlified), @r#"
-        [
-            StylizedText {
-                styles: Styles {
-                    bold: true,
-                    italic: false,
-                    underlined: None,
-                    crossed_out: false,
-                    spans: {},
-                },
-                text: "Bold",
-            },
-            StylizedText {
-                styles: Styles {
-                    bold: true,
-                    italic: false,
-                    underlined: None,
-                    crossed_out: false,
-                    spans: {
-                        [
-                            Attr {
-                                name: "style",
-                                value: "color:var(--red,#a00)",
-                            },
-                        ],
-                    },
-                },
-                text: "Red and Bold",
-            },
-        ]
-        "#);
-    }
-
-    #[test]
-    fn input_blue_red_text_red_text() {
-        // Input: blue -> red -> "Red" -> red -> " Still Red"
-        let ansi_text = "\x1b[34;31mRed\x1b[31m Still Red";
-        assert_opt_equiv_to_no_opt(ansi_text);
-        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
-        insta::assert_snapshot!(
-            htmlified,
-            @"<span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
-        );
-    }
-
-    #[test]
-    fn input_red_text_blue_red_text() {
-        // Input: red -> "Red" -> blue -> red -> " Still Red"
-        let ansi_text = "\x1b[31mRed\x1b[34;31m Still Red";
-        assert_opt_equiv_to_no_opt(ansi_text);
-        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
-        insta::assert_snapshot!(
-            htmlified,
-            @"<span style='color:var(--red,#a00)'>Red Still Red</span>"
-        );
-    }
-
-    #[test]
-    fn input_uline_blue_red_ulineoff_text_red_text() {
-        // Input: underline -> blue -> red -> underline off -> "Red" -> red -> " Still Red"
-        let ansi_text = "\x1b[4;34;31;24mRed\x1b[31m Still Red";
-        assert_opt_equiv_to_no_opt(ansi_text);
-        let htmlified = ansi_to_html::convert(ansi_text).unwrap();
-        insta::assert_snapshot!(
-            htmlified,
-            @"<u><span style='color:var(--blue,#00a)'></span></u><span style='color:var(--blue,#00a)'><span style='color:var(--red,#a00)'>Red Still Red</span></span>"
-        );
     }
 }
