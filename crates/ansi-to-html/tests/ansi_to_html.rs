@@ -23,6 +23,9 @@ fn human_readable_to_ansi(s: &str) -> String {
                 // Styles
                 "underline" => out.push('4'),
                 "double_underline" => out.push_str("21"),
+                "underline_off" => out.push_str("24"),
+                "overline" => out.push_str("53"),
+                "overline_off" => out.push_str("55"),
                 // Basic colors
                 "blue" => out.push_str("34"),
                 "cyan" => out.push_str("36"),
@@ -210,4 +213,16 @@ Setting FG color while inverted actually sets BG
     Setting FG color while inverted actually sets BG
     <span style='color:var(--red,#a00)'>Red fg<span style='color:var(--black,#000);background:var(--red,#a00)'>Red bg<span style='background:var(--green,#0a0)'>Green bg</span></span><span style='color:var(--green,#0a0)'>Green fg</span></span>
     ");
+}
+
+#[test]
+fn overline() {
+    let readable = "{{ overline }}over {{ underline }}and under{{ underline_off }} just over\
+                    {{ overline_off }} plain";
+    let ansi_text = human_readable_to_ansi(readable);
+    let converted = ansi_to_html::convert(&ansi_text).unwrap();
+    insta::assert_snapshot!(
+        converted,
+        @"<u style='text-decoration:overline'>over <u>and under</u> just over</u> plain"
+    );
 }

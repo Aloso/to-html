@@ -8,6 +8,7 @@
 //! - italic
 //! - underlined
 //! - doubly underlined
+//! - overlined
 //! - reverse video
 //! - crossed out
 //! - faint
@@ -23,7 +24,6 @@
 //! - proportional spacing
 //! - framed
 //! - encircled
-//! - overlined
 //! - ideogram attributes
 //! - non-standard extensions
 //!   - underline color

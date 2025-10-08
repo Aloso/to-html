@@ -11,6 +11,7 @@ struct CurrentStyling {
     faint: bool,
     italic: bool,
     underline: Option<UnderlineStyle>,
+    overline: bool,
     crossed_out: bool,
     inverted: bool,
 }
@@ -25,6 +26,7 @@ impl CurrentStyling {
             Ansi::Italic => self.italic = true,
             Ansi::Underline => self.underline = Some(UnderlineStyle::Default),
             Ansi::DoubleUnderline => self.underline = Some(UnderlineStyle::Double),
+            Ansi::Overline => self.overline = true,
             Ansi::Invert => self.inverted = true,
             Ansi::CrossedOut => self.crossed_out = true,
             Ansi::BoldAndFaintOff => {
@@ -33,6 +35,7 @@ impl CurrentStyling {
             }
             Ansi::ItalicOff => self.italic = false,
             Ansi::UnderlineOff => self.underline = None,
+            Ansi::OverlineOff => self.overline = false,
             Ansi::InvertOff => self.inverted = false,
             Ansi::CrossedOutOff => self.crossed_out = false,
             Ansi::ForgroundColor(c) => self.fg = Some(c),
