@@ -10,6 +10,7 @@ enum Style {
     Faint,
     Italic,
     Underline(UnderlineStyle),
+    Overline,
     CrossedOut,
     ForegroundColor(Color),
     BackgroundColor(Color),
@@ -24,6 +25,7 @@ impl Style {
             Style::Italic => "<i>",
             Style::Underline(UnderlineStyle::Default) => "<u>",
             Style::Underline(UnderlineStyle::Double) => "<u style='text-decoration-style:double'>",
+            Style::Overline => "<u style='text-decoration:overline'>",
             Style::CrossedOut => "<s>",
             Style::ForegroundColor(c) => {
                 let color = c.into_color_css(var_prefix);
@@ -86,7 +88,7 @@ impl Style {
         buf.push_str(match self {
             Style::Bold => "</b>",
             Style::Italic => "</i>",
-            Style::Underline(_) => "</u>",
+            Style::Underline(_) | Style::Overline => "</u>",
             Style::CrossedOut => "</s>",
             Style::Faint
             | Style::ForegroundColor(_)
@@ -168,10 +170,12 @@ impl AnsiConverter {
             Ansi::Underline => self.set_style(Style::Underline(UnderlineStyle::Default)),
             Ansi::Invert => self.set_style(Style::Inverted),
             Ansi::DoubleUnderline => self.set_style(Style::Underline(UnderlineStyle::Double)),
+            Ansi::Overline => self.set_style(Style::Overline),
             Ansi::CrossedOut => self.set_style(Style::CrossedOut),
             Ansi::BoldAndFaintOff => self.clear_style(|&s| s == Style::Bold || s == Style::Faint),
             Ansi::ItalicOff => self.clear_style(|&s| s == Style::Italic),
             Ansi::UnderlineOff => self.clear_style(|&s| matches!(s, Style::Underline(_))),
+            Ansi::OverlineOff => self.clear_style(|&s| s == Style::Overline),
             Ansi::InvertOff => self.clear_style(|&s| s == Style::Inverted),
             Ansi::CrossedOutOff => self.clear_style(|&s| s == Style::CrossedOut),
             Ansi::ForgroundColor(c) => self.set_style(Style::ForegroundColor(c)),

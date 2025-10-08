@@ -13,6 +13,7 @@ The supported styles are:
 - italic
 - underlined
 - doubly underlined
+- overlined
 - crossed out
 - faint
 - reverse video
@@ -28,7 +29,6 @@ and rarely supported by terminals):
 - proportional spacing
 - framed
 - encircled
-- overlined
 - ideogram attributes
 - non-standard extensions
   - underline color

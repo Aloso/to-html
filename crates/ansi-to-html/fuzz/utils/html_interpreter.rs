@@ -276,6 +276,7 @@ impl Attr {
 pub enum UnderlineStyle {
     Default,
     Double,
+    Overline,
 }
 
 impl From<Option<Attr>> for UnderlineStyle {
@@ -284,6 +285,9 @@ impl From<Option<Attr>> for UnderlineStyle {
             None => Self::Default,
             Some(attr) if attr.name == "style" && attr.value == "text-decoration-style:double" => {
                 Self::Double
+            }
+            Some(attr) if attr.name == "style" && attr.value == "text-decoration:overline" => {
+                Self::Overline
             }
             Some(unknown) => panic!("Unknown attr for <u>: {unknown:#?}"),
         }
