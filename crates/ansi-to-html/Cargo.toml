@@ -24,7 +24,7 @@ lazy-init = []
 [dev-dependencies]
 clap = { version = "4.5.48", features = ["derive"] }
 divan = "0.1.21"
-flate2 = "1.1.2"
+flate2 = "1.1.5"
 insta = "1.43.1"
 
 [[bench]]
