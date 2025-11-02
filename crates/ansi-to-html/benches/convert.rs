@@ -11,7 +11,7 @@ fn main() {
         .main();
 }
 
-static COMPRESSED_TERMINAL_SESSION: &[u8] = include_bytes!("../assets/terminal_session.gz");
+static COMPRESSED_TERMINAL_SESSION: &[u8] = include_bytes!("terminal_session.gz");
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Input {
