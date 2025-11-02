@@ -12,6 +12,8 @@ edition = "2021"
 license = "MIT"
 keywords = ["color", "cli", "terminal", "html"]
 
+exclude = ["/benches"]
+
 [dependencies]
 memchr = "2.7.6"
 regex = "1.12.2"
