@@ -21,7 +21,7 @@ jobs:
           rustup toolchain install ${{ matrix.rust }} --profile minimal --component clippy,rustfmt
           rustup default ${{ matrix.rust }}
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Run `cargo fmt`
         run: |
           cargo fmt --all -- --check
@@ -42,7 +42,7 @@ jobs:
           rustup toolchain install ${{ matrix.rust }} --profile minimal
           rustup default ${{ matrix.rust }}
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Build and run tests
         run: |
           cargo test --workspace
@@ -57,7 +57,7 @@ jobs:
           rustup toolchain install nightly --profile minimal
           rustup default nightly
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       # Run the fuzzer for a minute
       - name: Run fuzzers
         run: |
