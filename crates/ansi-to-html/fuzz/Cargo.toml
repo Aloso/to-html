@@ -15,7 +15,7 @@ libfuzzer-sys = "0.4"
 path = ".."
 
 [dev-dependencies]
-insta = "1.43.1"
+insta = "1.44.3"
 
 [lib]
 name = "harness"
