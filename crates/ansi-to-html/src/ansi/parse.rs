@@ -26,7 +26,7 @@ impl<'text> AnsiParser<'text> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum AnsiFragment<'text> {
     Sequence(&'text str),
     Text(&'text str),
@@ -88,6 +88,9 @@ enum State {
     Csi,
     Digit,
     SemiColon,
+    /// Operating System Command (OSC) - Starts a OSC command ended by a string terminator (ST)
+    InOsc,
+    StartSt,
 }
 
 impl State {
@@ -111,6 +114,14 @@ impl State {
                 | b's'
                 | b'u',
             ) => Self::Accept,
+            // OSC sequence
+            (Self::Escape, b']') => Self::InOsc,
+            // OSC sequence ends on a string terminator consisting of either the lone BEL byte
+            // (0x07) or ESC followed by `\` (0x1b5c)
+            (Self::InOsc | Self::StartSt, 0x07) => Self::Accept,
+            (Self::InOsc | Self::StartSt, 0x1b) => Self::StartSt,
+            (Self::StartSt, b'\\') => Self::Accept,
+            (Self::InOsc | Self::StartSt, _) => Self::InOsc,
             // Anything else is invalid
             _ => Self::Trap,
         };
@@ -133,7 +144,9 @@ impl From<State> for Status {
             | State::EscapeOpenParen
             | State::Csi
             | State::Digit
-            | State::SemiColon => Self::InSequence,
+            | State::SemiColon
+            | State::InOsc
+            | State::StartSt => Self::InSequence,
         }
     }
 }
@@ -203,5 +216,51 @@ mod tests {
             ),
         ]
         "###);
+    }
+
+    #[test]
+    fn basic_osc() {
+        let parser = AnsiParser::new("Before\x1b]8;;https://example.com\x07After");
+        let fragments: Vec<_> = parser.into_iter().collect();
+        insta::assert_debug_snapshot!(fragments, @r#"
+        [
+            Text(
+                "Before",
+            ),
+            Sequence(
+                "\u{1b}]8;;https://example.com\u{7}",
+            ),
+            Text(
+                "After",
+            ),
+        ]
+        "#);
+    }
+
+    #[track_caller]
+    fn assert_lone_sequence(seq: &str) {
+        let fragments: Vec<_> = AnsiParser::new(seq).into_iter().collect();
+        assert_eq!(fragments, [AnsiFragment::Sequence(seq)]);
+    }
+
+    #[test]
+    fn osc_st_variety() {
+        assert_lone_sequence("\x1b]0;custom window title\x07");
+        assert_lone_sequence("\x1b]8;;https://example.com\x1b\\");
+    }
+
+    #[test]
+    fn osc_st_edgecases() {
+        assert_lone_sequence("\x1b]\x1b <-- esc not for st \x07");
+        assert_lone_sequence("\x1b] esc not for st right before bel st --> \x1b\x07");
+        assert_lone_sequence("\x1b]\x1b <-- both esc not for st --> \x1b\x07");
+        assert_lone_sequence("\x1b] st start before valid st \x1b\x1b\\");
+    }
+
+    #[test]
+    fn osc_no_st() {
+        let input = "\x1b] osc with no string terminator";
+        let fragments: Vec<_> = AnsiParser::new(input).into_iter().collect();
+        assert_eq!(fragments, [AnsiFragment::Text(input)]);
     }
 }
