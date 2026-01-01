@@ -33,7 +33,7 @@ libc = "0.2"
 
 [build-dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
-clap_complete = "4.5.61"
+clap_complete = "4.5.64"
 
 [profile.dev.package."*"]
 opt-level = 1
