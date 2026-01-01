@@ -27,7 +27,7 @@ lazy-init = []
 clap = { version = "4.5.53", features = ["derive"] }
 divan = "0.1.21"
 flate2 = "1.1.5"
-insta = "1.44.3"
+insta = "1.45.1"
 
 [[bench]]
 name = "convert"
