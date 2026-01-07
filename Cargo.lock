@@ -460,24 +460,24 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
 name = "logos"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab6f536c1af4c7cc81edf73da1f8029896e7e1e16a219ef09b184e76a296f3db"
+checksum = "a790d11254054e5dc83902dba85d253ff06ceb0cfafb12be8773435cb9dfb4f4"
 dependencies = [
  "logos-derive",
 ]
 
 [[package]]
 name = "logos-codegen"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "189bbfd0b61330abea797e5e9276408f2edbe4f822d7ad08685d67419aafb34e"
+checksum = "f60337c43a38313b58871f8d5d76872b8e17aa9d51fad494b5e76092c0ce05f5"
 dependencies = [
  "beef",
  "fnv",
- "lazy_static",
  "proc-macro2",
  "quote",
+ "regex-automata",
  "regex-syntax",
  "rustc_version",
  "syn",
@@ -485,9 +485,9 @@ dependencies = [
 
 [[package]]
 name = "logos-derive"
-version = "0.15.0"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebfe8e1a19049ddbfccbd14ac834b215e11b85b90bab0c2dba7c7b92fb5d5cba"
+checksum = "d151b2ae667f69e10b8738f5cac0c746faa22b2e15ea7e83b55476afec3767dc"
 dependencies = [
  "logos-codegen",
 ]
