@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-05-13
+
+- [`#44`](https://github.com/Aloso/to-html/pull/44): Change ANSI code 21 from bold off to double underline
+
+- [`#46`](https://github.com/Aloso/to-html/pull/46): Support reverse video, add `--theme={light,dark}` option (default: dark)
+
+- [`#45`](https://github.com/Aloso/to-html/pull/45): refactor: Replace regex parser for a handwritten one
+
+- [`#82`](https://github.com/Aloso/to-html/pull/82): refactor: Speed up the ansi parser
+
+- [`#123`](https://github.com/Aloso/to-html/pull/123): support overline ansi code
+
+- [`#91`](https://github.com/Aloso/to-html/pull/91): support parsing Operating System Command (OSC) sequences
+
 ## [0.1.6] - 2024-11-29
 
 - [`#34`](https://github.com/Aloso/to-html/pull/34): Allows for a single optional semicolon in ansi codes before the terminating `m` (@CosmicHorrorDev)
@@ -27,7 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [`#19`](https://github.com/Aloso/to-html/pull/19): Make `to-html` configurable with a config file located in
   the proper location depending on the OS (@CosmicHorrorDev)
-
   - Linux: `$XDG_CONFIG_HOME/to-html/config.toml` or `~/.config/to-html/config.toml`
   - macOS: `$HOME/Library/Application Support/to-html/config.toml`
 

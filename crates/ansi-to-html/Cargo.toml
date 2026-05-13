@@ -1,12 +1,15 @@
 [package]
 name = "ansi-to-html"
-version = "0.2.2"
-authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
+version = "0.2.3"
+authors = [
+  "Ludwig Stecher <ludwig.stecher@gmx.de>",
+  "CosmicHorrorDev <CosmicHorrorDev@pm.me>",
+]
 description = "ANSI escape codes to HTML converter"
 categories = ["command-line-interface", "encoding"]
 repository = "https://github.com/Aloso/to-html"
 documentation = "https://docs.rs/ansi-to-html"
-homepage = "https://github.com/Aloso/to-html/tree/master/crates/ansi-to-html"
+homepage = "https://github.com/Aloso/to-html/tree/main/crates/ansi-to-html"
 readme = "README.md"
 edition = "2021"
 license = "MIT"
@@ -24,7 +27,7 @@ default = []
 lazy-init = []
 
 [dev-dependencies]
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 divan = "0.1.21"
 flate2 = "1.1.5"
 insta = "1.45.1"
