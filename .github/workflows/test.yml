@@ -3,11 +3,11 @@ name: Test
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
   schedule:
     # Run monthly to keep Rust toolchain changes fresh
-    - cron: '0 0 1 * *'
+    - cron: "0 0 1 * *"
 
 jobs:
   lint:
@@ -61,5 +61,5 @@ jobs:
       # Run the fuzzer for a minute
       - name: Run fuzzers
         run: |
-          cargo --locked install cargo-fuzz
+          cargo install cargo-fuzz
           cargo --locked fuzz run --jobs=4 --fuzz-dir=crates/ansi-to-html/fuzz opt_equiv -- -max_total_time=60 -timeout=30
