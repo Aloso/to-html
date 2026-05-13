@@ -85,7 +85,7 @@ theme = "dark"         # override with --theme <THEME>
 
 ## ANSI support 🎨
 
-[List of supported features](https://github.com/Aloso/to-html/blob/master/crates/ansi-to-html/README.md#ansi-support)
+[List of supported features](https://github.com/Aloso/to-html/blob/main/crates/ansi-to-html/README.md#ansi-support)
 
 `to-html` only supports SGR parameters (text style and colors). However, programs that overwrite their output, like for progress bars, seem to "just work". Please correct me if I'm wrong.
 
