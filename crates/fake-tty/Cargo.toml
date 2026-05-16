@@ -1,16 +1,16 @@
 [package]
 name = "fake-tty"
 version = "0.3.1"
-authors = ["Ludwig Stecher <ludwig.stecher@gmx.de>"]
 description = "Run command with bash pretending to be a tty"
 categories = []
-repository = "https://github.com/Aloso/to-html"
 documentation = "https://docs.rs/fake-tty"
 homepage = "https://github.com/Aloso/to-html/tree/main/crates/fake-tty"
 readme = "README.md"
-edition = "2021"
 keywords = ["cli", "terminal"]
-license = "MIT"
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

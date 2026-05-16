@@ -150,7 +150,7 @@ pub(crate) struct Heredoc<'a> {
 
 #[derive(Logos, Debug, PartialEq, Copy, Clone)]
 pub(crate) enum TokenKind {
-    #[regex("#.*")]
+    #[regex("#.*", allow_greedy = true)]
     Comment,
 
     #[regex(r#"\\\d\d\d"#)]
@@ -236,7 +236,7 @@ pub(crate) enum DStringTokenKind {
 
 #[derive(Logos, Debug, PartialEq, Copy, Clone)]
 pub(crate) enum HeredocTokenKind {
-    #[regex("[^\n]+\n?", priority = 1)]
+    #[regex(".+\n?", priority = 1, allow_greedy = true)]
     Line,
 }
 

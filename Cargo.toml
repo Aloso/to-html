@@ -1,24 +1,27 @@
-[package]
-name = "to-html"
-version = "0.2.0"
-authors = [
+[workspace]
+members = ["crates/*", "crates/ansi-to-html/fuzz"]
+package.edition = "2024"
+package.license = "MIT OR Apache-2.0"
+package.repository = "https://github.com/Aloso/to-html"
+package.authors = [
   "Ludwig Stecher <ludwig.stecher@gmx.de>",
   "CosmicHorrorDev <CosmicHorrorDev@pm.me>",
 ]
+
+[package]
+name = "to-html"
+version = "0.2.0"
 description = "Render a terminal with ANSI colors as HTML"
 categories = ["command-line-utilities"]
-repository = "https://github.com/Aloso/to-html"
 documentation = "https://docs.rs/to-html"
 homepage = "https://github.com/Aloso/to-html"
 readme = "README.md"
-edition = "2021"
-license = "MIT"
 keywords = ["color", "cli", "terminal", "html"]
 exclude = ["docs"]
-resolver = "2"
-
-[workspace]
-members = ["crates/*", "crates/ansi-to-html/fuzz"]
+repository.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -27,7 +30,7 @@ fake-tty = { path = "./crates/fake-tty", version = "0.3.1" }
 ansi-to-html = { path = "./crates/ansi-to-html", version = "0.2.2" }
 clap = { version = "4.6.1", features = ["derive", "wrap_help"] }
 dirs-next = "2.0.0"
-logos = "0.15.1"
+logos = "0.16.1"
 serde_derive = "1.0.228"
 serde = "1.0.228"
 toml = "1.1.2"
