@@ -1,6 +1,6 @@
 use crate::{
-    html::{AnsiConverter, UnderlineStyle},
     Ansi, Color, Theme,
+    html::{AnsiConverter, UnderlineStyle},
 };
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

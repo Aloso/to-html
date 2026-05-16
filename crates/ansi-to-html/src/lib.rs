@@ -61,8 +61,8 @@ mod esc;
 mod html;
 
 use ansi::{
-    parse::{AnsiFragment, AnsiParser},
     Ansi, AnsiIter,
+    parse::{AnsiFragment, AnsiParser},
 };
 use color::Color;
 

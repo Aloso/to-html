@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use crate::{color::FourBitColor, Ansi, AnsiFragment, AnsiIter, AnsiParser, Color, Error, Theme};
+use crate::{Ansi, AnsiFragment, AnsiIter, AnsiParser, Color, Error, Theme, color::FourBitColor};
 
 mod minifier;
 
@@ -53,11 +53,7 @@ impl Style {
     }
 
     fn get_property(is_foreground: bool) -> &'static str {
-        if is_foreground {
-            "color"
-        } else {
-            "background"
-        }
+        if is_foreground { "color" } else { "background" }
     }
 
     fn get_fg_and_bg(styles: &[Style], theme: Theme) -> (Color, Color) {

@@ -24,7 +24,7 @@ impl Color {
             _ => {
                 return Err(Error::InvalidAnsi {
                     msg: format!("unexpected integer {code} parsing 4-bit color"),
-                })
+                });
             }
         }))
     }
@@ -42,7 +42,7 @@ impl Color {
             _ => {
                 return Err(Error::InvalidAnsi {
                     msg: format!("unexpected integer {code} parsing bright 4-bit color"),
-                })
+                });
             }
         }))
     }
@@ -85,7 +85,7 @@ impl Color {
             _ => {
                 return Err(Error::InvalidAnsi {
                     msg: format!("Expected 2 or 5, got {code}"),
-                })
+                });
             }
         })
     }
