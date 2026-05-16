@@ -1,8 +1,7 @@
-use ansi_to_html::{convert, Converter};
+use ansi_to_html::{Converter, convert};
 use html5ever::{
-    local_name, tendril,
+    Attribute, QualName, TokenizerResult, local_name, tendril,
     tokenizer::{BufferQueue, Tag, TagKind, Token, TokenSink, TokenSinkResult, Tokenizer},
-    Attribute, QualName, TokenizerResult,
 };
 
 use std::{cell::RefCell, collections::BTreeSet, mem, str::FromStr};

@@ -76,7 +76,7 @@ where
         _ => {
             return Err(Error::InvalidAnsi {
                 msg: format!("Unexpected code {code}"),
-            })
+            });
         }
     })
 }

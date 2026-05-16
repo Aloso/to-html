@@ -1,7 +1,7 @@
 use std::{hint::black_box, io::Read, time::Duration};
 
 use ansi_to_html::Converter;
-use divan::{bench, counter::BytesCount, Bencher, Divan};
+use divan::{Bencher, Divan, bench, counter::BytesCount};
 use flate2::bufread::GzDecoder;
 
 fn main() {

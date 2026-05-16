@@ -4,7 +4,7 @@ fn main() {
     use std::{env, fs};
 
     use clap::{CommandFactory, ValueEnum};
-    use clap_complete::{generate_to, Shell};
+    use clap_complete::{Shell, generate_to};
 
     let out_dir = env::var("SHELL_COMPLETIONS_DIR")
         .or_else(|_| env::var("OUT_DIR"))
