@@ -181,8 +181,10 @@ impl RawStyle {
             name,
             self_closing,
             attrs,
+            had_duplicate_attributes,
         } = tag;
         assert!(!self_closing, "Unexpected self-closing tag");
+        assert!(!had_duplicate_attributes, "Unexpected duplicate attributes");
 
         let raw_style = match name {
             &local_name!("b") => Self::Bold,
