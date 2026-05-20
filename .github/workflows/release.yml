@@ -16,10 +16,6 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - name: Set variables
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
-
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
@@ -31,7 +27,7 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            This is a new release of `to-html`. [Read the changelog here](https://github.com/Aloso/to-html/blob/${{ steps.vars.outputs.tag }}/CHANGELOG.md).
+            This is a new release of `to-html`. [Read the changelog here](https://github.com/Aloso/to-html/blob/${{ github.ref }}/CHANGELOG.md).
 
             `to-html` is currently compatible with Linux, macOS, FreeBSD and Android. If you're using Windows, I recommend to use WSL.
 
