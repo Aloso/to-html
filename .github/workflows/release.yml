@@ -13,6 +13,8 @@ jobs:
     name: Create release
     runs-on: ubuntu-latest
     steps:
+      # TODO(cosmic): somehow this action is unmaintained... replace with an
+      # alternative (gh-cli?)
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
