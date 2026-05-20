@@ -58,11 +58,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-          - os: macos-latest
-            platform: macos
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Checkout
@@ -73,9 +69,6 @@ jobs:
           rustup show active-toolchain
           rustc --version
           cargo tree
-      - name: Set variables
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
       - name: Build project
         env:
@@ -87,5 +80,4 @@ jobs:
         with:
           bin: to-html
           include: completions
-          asset_name: to-html_${{ matrix.platform }}_${{ steps.vars.outputs.tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
