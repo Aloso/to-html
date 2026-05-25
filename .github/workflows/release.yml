@@ -21,8 +21,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sed --in-place s/:TAG:/${{ github.ref }}/g RELEASE_NOTES.md
-          gh release create ${{ github.ref }} --title 'Release ${{ github.ref }}' --notes-file RELEASE_NOTES.md
+          sed --in-place s/:TAG:/$GITHUB_REF_NAME/g RELEASE_NOTES.md
+          gh release create $GITHUB_REF_NAME --title "Release $GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
   release_assets:
     name: Release assets
     needs: create_release
