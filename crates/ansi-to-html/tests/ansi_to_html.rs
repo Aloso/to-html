@@ -239,3 +239,10 @@ fn hyperlink() {
         @"Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s"
     );
 }
+
+#[test]
+fn no_escape_hyperlink() {
+    let input = "\x1b]8;;https://example.org/index.html&foo=27\x1b\\link\x1b]8;;\x1b\\";
+    let converted = ansi_to_html::convert(input).unwrap();
+    insta::assert_snapshot!(converted, @"link");
+}
