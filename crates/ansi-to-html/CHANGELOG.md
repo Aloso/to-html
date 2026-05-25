@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.3] - Unreleased
+## [0.2.3] - 2026-05-13
 
 There's quite a lot packed into this release. The headliners are:
 
