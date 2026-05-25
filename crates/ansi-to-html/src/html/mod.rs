@@ -1,6 +1,8 @@
 use std::fmt::Write;
 
-use crate::{Ansi, AnsiFragment, AnsiIter, AnsiParser, Color, Error, Theme, color::FourBitColor};
+use crate::{
+    Ansi, AnsiFragment, AnsiIter, AnsiParser, Color, Error, Esc, Theme, color::FourBitColor,
+};
 
 mod minifier;
 
@@ -105,6 +107,7 @@ pub fn ansi_to_html(
     input: &str,
     four_bit_var_prefix: Option<String>,
     theme: Theme,
+    escape: bool,
 ) -> Result<String, Error> {
     let mut minifier = minifier::Minifier::new(four_bit_var_prefix, theme);
 
@@ -129,7 +132,7 @@ pub fn ansi_to_html(
                     minifier.push_ansi_code(ansi?);
                 }
             }
-            AnsiFragment::Text(text) => minifier.push_str(text),
+            AnsiFragment::Text(text) => minifier.push_str(text, escape),
         }
     }
 
@@ -210,8 +213,12 @@ impl AnsiConverter {
         }
     }
 
-    fn push_str(&mut self, s: &str) {
-        self.result.push_str(s);
+    fn push_str(&mut self, s: &str, escape: bool) {
+        if escape {
+            write!(self.result, "{}", Esc(s)).unwrap();
+        } else {
+            self.result.push_str(s);
+        }
     }
 
     fn result(self) -> String {

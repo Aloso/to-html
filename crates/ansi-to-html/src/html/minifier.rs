@@ -89,9 +89,9 @@ impl Minifier {
         self.code_buffer.clear();
     }
 
-    pub fn push_str(&mut self, text: &str) {
+    pub fn push_str(&mut self, text: &str, escape: bool) {
         self.apply_ansi_codes();
-        self.converter.push_str(text);
+        self.converter.push_str(text, escape);
     }
 
     pub fn into_html(mut self) -> String {
