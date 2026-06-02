@@ -1,6 +1,6 @@
 # ansi-to-html
 
-[Documentation](https://docs.rs/crate/ansi-to-html)
+![Licenses](https://img.shields.io/crates/l/ansi-to-html) [![Crates.io](https://img.shields.io/crates/v/ansi-to-html)](https://crates.io/crates/ansi-to-html) [![Documentation](https://img.shields.io/docsrs/ansi-to-html/latest)](https://docs.rs/ansi-to-html/latest/ansi_to_html/) [![Tests](https://github.com/Aloso/to-html/workflows/Test/badge.svg)](https://github.com/Aloso/to-html/actions?query=workflow%3ATest)
 
 Rust library to convert a string that can contain [ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code) to HTML.
 
