@@ -1,6 +1,6 @@
 # fake-tty
 
-[Documentation](https://docs.rs/crate/fake-tty)
+![Licenses](https://img.shields.io/crates/l/fake-tty) [![Crates.io](https://img.shields.io/crates/v/fake-tty)](https://crates.io/crates/fake-tty) [![Documentation](https://img.shields.io/docsrs/fake-tty/latest)](https://docs.rs/fake-tty/latest/fake_tty/) [![Tests](https://github.com/Aloso/to-html/workflows/Test/badge.svg)](https://github.com/Aloso/to-html/actions?query=workflow%3ATest)
 
 Rust library to run a command in bash, pretending to be a tty. This means that the command will assume that terminal colors and other terminal features are available. This is done by executing the [script](https://man7.org/linux/man-pages/man1/script.1.html) command.
 

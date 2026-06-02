@@ -2,7 +2,7 @@
 
 Terminal wrapper for rendering a terminal on a website by converting ANSI escape sequences to HTML. Works with many shells, including bash, fish, ksh and zsh.
 
-[![Crates.io](https://img.shields.io/crates/l/to_html)](./LICENSE-MIT) [![Crates.io](https://img.shields.io/crates/v/to-html)](https://crates.io/crates/to-html) [![Tests](https://github.com/Aloso/to-html/workflows/Test/badge.svg)](https://github.com/Aloso/to-html/actions?query=workflow%3ATest)
+![Licenses](https://img.shields.io/crates/l/to_html) [![Crates.io](https://img.shields.io/crates/v/to-html)](https://crates.io/crates/to-html) [![Tests](https://github.com/Aloso/to-html/workflows/Test/badge.svg)](https://github.com/Aloso/to-html/actions?query=workflow%3ATest)
 
 ## Changelog ☑
 
