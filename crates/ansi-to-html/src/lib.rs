@@ -2,17 +2,21 @@
 //! [ANSI escape codes](https://en.wikipedia.org/wiki/ANSI_escape_code) to HTML.
 //!
 //! This crate currently supports SGR parameters (text style and colors).
-//! The supported styles are:
+//! The supported styles are (where `\e` represents an Escape):
 //!
-//! - bold
-//! - italic
-//! - underlined
-//! - doubly underlined
-//! - overlined
-//! - reverse video
-//! - crossed out
-//! - faint
-//! - foreground and background colors: 3-bit, 4-bit, 8-bit, truecolor (24-bit)
+//! | style | `\e[{CODE}m` | sample | `convert(sample)` | rendered |
+//! | :---: | :---: | :---: | :--- | :--- |
+//! | Bold | 1 | `\e[1mBold` | `<b>Bold</b>` | <b>Bold</b> |
+//! | Faint | 2 | `\e[2mFaint` | `<span style='opacity:0.67'>Faint</span>` | <span style='opacity:0.67'>Faint</span> |
+//! | Italic | 3 | `\e[3mItalic` | `<i>Italic</i>` | <i>Italic</i> |
+//! | Underlined | 4 | `\e[4mUnderlined` | `<u>Underlined</u>` | <u>Underlined</u> |
+//! | Doubly Underlined | 21 | `\e[21mDouble` | `<u style='text-decoration-style:double'>Double</u>` | <u style='text-decoration-style:double'>Double</u> |
+//! | Overlined | 53 | `\e[53mOverlined` | `<u style='text-decoration:overline'>Overlined</u>` | <u style='text-decoration:overline'>Overlined</u> |
+//! | Crossed Out | 9 | `\e[9mStriked` | `<s>Striked</s>` | <s>Striked</s> |
+//! | Reverse Video | 7 | `\e[7mReverse` | `<span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Reverse</span>` | <span style='color:var(--black,#000);background:var(--bright-white,#fff)'>Reverse</span> |
+//! | 3/4-bit fg/bg color | 30-37, 40-47, 90-97, 100-107 | `\e[31mRed` | `<span style='color:var(--red,#a00)'>Red</span>` | <span style='color:var(--red,#a00)'>Red</span> |
+//! | 8-bit fg/bg color | `38;5;{NUM}`, `48;5;{NUM}` | `\e[38;5;211m#211` | `<span style='color:#ff87af'>#211</span>` | <span style='color:#ff87af'>#211</span> |
+//! | fg/bg truecolor (24-bit) | `38;2;{R};{G};{B}`, `48;2;{R};{G};{B}` | `\e[38;2;224;176;255mMauve` | `<span style='color:#e0b0ff'>Mauve</span>` | <span style='color:#e0b0ff'>Mauve</span> |
 //!
 //! **Not** supported SGR parameters (note that most of these are niche features
 //! and rarely supported by terminals):
@@ -33,7 +37,7 @@
 //! All unsupported ANSI escape codes are stripped from the output.
 //!
 //! It should be easy to add support for more styles, if there's a straightforward HTML
-//! representation. If you need a different style (e.g. doubly underlined), file an issue.
+//! representation. If you need a different style (e.g. conceal), file an issue.
 //!
 //!
 //! ## Example
