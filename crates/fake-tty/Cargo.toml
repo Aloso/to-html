@@ -2,8 +2,7 @@
 name = "fake-tty"
 version = "0.3.1"
 description = "Run command with bash pretending to be a tty"
-categories = []
-documentation = "https://docs.rs/fake-tty"
+categories = ["command-line-interface"]
 homepage = "https://github.com/Aloso/to-html/tree/main/crates/fake-tty"
 readme = "README.md"
 keywords = ["cli", "terminal"]
@@ -11,7 +10,3 @@ repository.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
