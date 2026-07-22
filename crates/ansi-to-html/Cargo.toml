@@ -16,7 +16,6 @@ exclude = ["/benches"]
 
 [dependencies]
 memchr = "2.8.0"
-regex = "1.12.3"
 
 [features]
 default = []

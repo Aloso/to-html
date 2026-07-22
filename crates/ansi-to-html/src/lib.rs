@@ -56,8 +56,6 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::return_self_not_must_use)]
 
-use std::sync::OnceLock;
-
 mod ansi;
 mod color;
 mod error;
@@ -72,8 +70,6 @@ use color::Color;
 
 pub use error::Error;
 pub use esc::Esc;
-
-use regex::Regex;
 
 /// Converts a string containing ANSI escape codes to HTML.
 ///
@@ -211,20 +207,96 @@ pub fn convert_with_opts(input: &str, converter: &Converter) -> Result<String, E
     converter.convert(input)
 }
 
-const OPT_REGEX_1: &str = r"<span \w+='[^']*'></span>|<b></b>|<i></i>|<u></u>|<s></s>";
-const OPT_REGEX_2: &str = "</b><b>|</i><i>|</s><s>";
-
 fn optimize(html: &str) -> String {
-    static REGEXES: OnceLock<(Regex, Regex)> = OnceLock::new();
-    let (regex1, regex2) = REGEXES.get_or_init(|| {
-        (
-            Regex::new(OPT_REGEX_1).unwrap(),
-            Regex::new(OPT_REGEX_2).unwrap(),
-        )
-    });
+    let mut haystack = html.as_bytes();
+    let mut output = Vec::new();
+    loop {
+        let Some(tag_start) = memchr::memchr(b'<', haystack) else {
+            output.extend_from_slice(haystack);
+            break;
+        };
+        match empty_span_matcher(&haystack[tag_start + 1..]) {
+            Some(after) => {
+                if tag_start > 0 {
+                    output.extend_from_slice(&haystack[..tag_start]);
+                }
+                haystack = after;
+            }
+            None => {
+                if haystack.is_empty() {
+                    break;
+                } else {
+                    let (before, after) = haystack.split_at(tag_start + 1);
+                    output.extend_from_slice(before);
+                    haystack = after;
+                }
+            }
+        }
+    }
+    String::from_utf8(output).expect("all from valid utf-8 fragments")
+}
 
-    let html = regex1.replace_all(html, "");
-    let html = regex2.replace_all(&html, "");
+fn empty_span_matcher(haystack: &[u8]) -> Option<&[u8]> {
+    haystack
+        .strip_prefix(b"b></b>")
+        .or_else(|| haystack.strip_prefix(b"i></i>"))
+        .or_else(|| haystack.strip_prefix(b"u></u>"))
+        .or_else(|| haystack.strip_prefix(b"s></s>"))
+        .or_else(|| haystack.strip_prefix(b"/b><b>"))
+        .or_else(|| haystack.strip_prefix(b"/i><i>"))
+        .or_else(|| haystack.strip_prefix(b"/s><s>"))
+        .or_else(|| {
+            // span_
+            let stripped = haystack.strip_prefix(b"span ")?;
+            let mut index = 0;
 
-    html.to_string()
+            // \w+=
+            while stripped.get(index)?.is_ascii_alphabetic() {
+                index += 1;
+            }
+            if index == 0 || stripped.get(index)? != &b'=' {
+                return None;
+            }
+
+            // '[^']*'
+            index += 1;
+            if stripped.get(index)? != &b'\'' {
+                return None;
+            }
+            index += 1;
+            while stripped.get(index)? != &b'\'' {
+                index += 1;
+            }
+
+            stripped[index..].strip_prefix(b"'></span>")
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::optimize;
+
+    #[test]
+    fn empty() {
+        let empty = "<s></s><b></b><i></i><u></u><span style='color:#e0b0ff'></span>";
+        assert_eq!("", optimize(empty));
+    }
+
+    #[test]
+    fn repeated_styles() {
+        let bold = "<b>Bold.</b><b> Still bold.</b>";
+        assert_eq!("<b>Bold. Still bold.</b>", optimize(bold));
+
+        let italic = "<i>Italic.</i><i> Still italic.</i>";
+        assert_eq!("<i>Italic. Still italic.</i>", optimize(italic));
+
+        let striked = "<s>Striked.</s><s> Still striked.</s>";
+        assert_eq!("<s>Striked. Still striked.</s>", optimize(striked));
+    }
+
+    #[test]
+    fn mixed_styles_stay() {
+        let mixed = "<b>Bold.</b><i> Italic.</i>";
+        assert_eq!(mixed, optimize(mixed));
+    }
 }
