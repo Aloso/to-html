@@ -33,11 +33,7 @@ pub struct Esc<T: AsRef<str>>(pub T);
 impl<T: AsRef<str>> fmt::Display for Esc<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut s = self.0.as_ref();
-        while let Some(pos) = s
-            .as_bytes()
-            .iter()
-            .position(|b| [b'&', b'<', b'>', b'"', b'\''].contains(b))
-        {
+        while let Some(pos) = s.as_bytes().iter().position(|b| b"&<>\"'".contains(b)) {
             f.write_str(&s[..pos])?;
             let escaped = match s.as_bytes()[pos] {
                 b'&' => "&amp;",
