@@ -1,16 +1,16 @@
 [package]
 name = "ansi-to-html"
-version = "0.2.3"
+version = "0.2.4"
 description = "ANSI escape codes to HTML converter"
 categories = ["command-line-interface", "encoding"]
-documentation = "https://docs.rs/ansi-to-html"
+keywords = ["color", "cli", "terminal", "html"]
 homepage = "https://github.com/Aloso/to-html/tree/main/crates/ansi-to-html"
 readme = "README.md"
-keywords = ["color", "cli", "terminal", "html"]
 repository.workspace = true
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
+rust-version = "1.85.1"
 
 exclude = ["/benches"]
 
@@ -18,7 +18,6 @@ exclude = ["/benches"]
 memchr = "2.8.0"
 
 [features]
-default = []
 # A now unused feature that will be removed in a future release
 lazy-init = []
 
@@ -31,7 +30,3 @@ insta = "1.47.2"
 [[bench]]
 name = "convert"
 harness = false
-
-[lints.rust.unexpected_cfgs]
-level = "warn"
-check-cfg = ["cfg(fuzzing)"]
