@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.2.4] - 2026-08-14
+
+### Deps
+
+- Bump `memchr` from 2.8.0 to 2.8.2 [#170]
+- Drop our final `regex` usage for a handwritten parser [#172]
+
+### Docs
+
+- Change license to MIT or APACHE-2.0 [#153]
+- Expand on README and ANSI code support [#163]
+
+### Internal
+
+- Don't escape ANSI sequences [#157] [#158]
+  - This doesn't change any behavior at the moment, but it is correct for once hyperlinks are passed through
+- Placate clippy [#171]
+
+### Contributors
+
+This release was made possible thanks to the following contributors :heart:
+
+- [@Aloso]
+- [@CosmicHorrorDev]
+
+[#153]: https://github.com/Aloso/to-html/pull/153
+[#157]: https://github.com/Aloso/to-html/pull/157
+[#158]: https://github.com/Aloso/to-html/pull/158
+[#163]: https://github.com/Aloso/to-html/pull/163
+[#170]: https://github.com/Aloso/to-html/pull/170
+[#171]: https://github.com/Aloso/to-html/pull/171
+[#172]: https://github.com/Aloso/to-html/pull/172
+[@Aloso]: https://github.com/Aloso
+[@CosmicHorrorDev]: https://github.com/CosmicHorrorDev
+
 ## [0.2.3] - 2026-05-13
 
 There's quite a lot packed into this release. The headliners are:
