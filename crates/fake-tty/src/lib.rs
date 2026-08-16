@@ -19,10 +19,20 @@ use std::{
     string::FromUtf8Error,
 };
 
+#[cfg(not(any(
+    target_os = "android",
+    target_os = "linux",
+    target_os = "macos",
+    target_os = "freebsd"
+)))]
+compile_error!("This platform is not supported. See https://github.com/Aloso/to-html/issues/3");
+
 /// Creates a command that is executed by bash, pretending to be a tty.
 ///
 /// This means that the command will assume that terminal colors and
 /// other terminal features are available.
+///
+/// This is equivalent to calling `command(cmd, Some("bash"))`
 pub fn bash_command(command: &str) -> io::Result<Command> {
     let mut command = make_script_command(command, Some("bash"))?;
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -34,6 +44,8 @@ pub fn bash_command(command: &str) -> io::Result<Command> {
 ///
 /// This means that the command will assume that terminal colors and
 /// other terminal features are available.
+///
+/// If `shell` is `None` then it will default to `bash`
 pub fn command(command: &str, shell: Option<&str>) -> io::Result<Command> {
     let mut command = make_script_command(command, shell)?;
     command.stdout(Stdio::piped()).stderr(Stdio::piped());
@@ -79,14 +91,6 @@ pub fn make_script_command(c: &str, shell: Option<&str>) -> io::Result<Command> 
         command.args(&["-q", "/dev/null", shell.trim(), "-c", c]);
         Ok(command)
     }
-
-    #[cfg(not(any(
-        target_os = "android",
-        target_os = "linux",
-        target_os = "macos",
-        target_os = "freebsd"
-    )))]
-    compile_error!("This platform is not supported. See https://github.com/Aloso/to-html/issues/3")
 }
 
 /// Returns the standard output of the command.
