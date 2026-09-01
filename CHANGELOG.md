@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-09-01
+
+- [`#153`]: Change license from MIT to MIT OR Apache-2
+- [`#154`]: Update dependencies
+- [`#160`] [`#161`] [`#162`]: Modernize CI releases
+- [`#163`]: Update README badges
+
+[`#153`]: https://github.com/Aloso/to-html/pull/153
+[`#154`]: https://github.com/Aloso/to-html/pull/154
+[`#160`]: https://github.com/Aloso/to-html/pull/160
+[`#161`]: https://github.com/Aloso/to-html/pull/161
+[`#162`]: https://github.com/Aloso/to-html/pull/162
+[`#163`]: https://github.com/Aloso/to-html/pull/163
+[0.2.1]: https://github.com/Aloso/to-html/releases/tag/v0.2.1
+
 ## [0.2.0] - 2026-05-13
 
 - [`#44`](https://github.com/Aloso/to-html/pull/44): Change ANSI code 21 from bold off to double underline
