@@ -239,7 +239,7 @@ mod tests {
 
     #[track_caller]
     fn assert_lone_sequence(seq: &str) {
-        let fragments: Vec<_> = AnsiParser::new(seq).into_iter().collect();
+        let fragments: Vec<_> = AnsiParser::new(seq).collect();
         assert_eq!(fragments, [AnsiFragment::Sequence(seq)]);
     }
 
@@ -260,7 +260,7 @@ mod tests {
     #[test]
     fn osc_no_st() {
         let input = "\x1b] osc with no string terminator";
-        let fragments: Vec<_> = AnsiParser::new(input).into_iter().collect();
+        let fragments: Vec<_> = AnsiParser::new(input).collect();
         assert_eq!(fragments, [AnsiFragment::Text(input)]);
     }
 }
