@@ -14,7 +14,6 @@ version = "0.2.1"
 description = "Render a terminal with ANSI colors as HTML"
 categories = ["command-line-utilities"]
 documentation = "https://docs.rs/to-html"
-homepage = "https://github.com/Aloso/to-html"
 readme = "README.md"
 keywords = ["color", "cli", "terminal", "html"]
 exclude = ["docs"]

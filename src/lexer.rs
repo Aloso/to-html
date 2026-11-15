@@ -218,7 +218,7 @@ pub(crate) enum DStringTokenKind {
     DoubleQuote,
 
     #[regex(r"\$[\d#\-\$*?!@]|\$[\w_][\w\d_]*", priority = 3)]
-    #[regex(r#"\$\{(\\\\|\\\}|[^\\}])*\}"#, priority = 3)]
+    #[regex(r#"\$\{(\\\\|\\\}|[^\\}])*\}"#)]
     Variable,
 
     #[token("`", priority = 2)]
